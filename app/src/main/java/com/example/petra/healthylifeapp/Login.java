@@ -24,7 +24,7 @@ public class Login extends AppCompatActivity {
     private CallbackManager mFacebookCallbackManager;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle  savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         FacebookSdk.sdkInitialize(getApplicationContext());
