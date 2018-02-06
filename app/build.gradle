@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+
 
 android {
     compileSdkVersion 25
@@ -29,4 +31,6 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.facebook.android:facebook-android-sdk:4.6.0'
     compile 'junit:junit:4.12'
+    compile 'com.google.android.gms:play-services-auth:8.3.0'
 }
+

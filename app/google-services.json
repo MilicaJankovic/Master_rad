@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "551540169658",
+    "project_id": "firebase-healthy-life-app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551540169658:android:f1707f2cd5a1d456",
+        "android_client_info": {
+          "package_name": "com.example.petra.healthylifeapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "551540169658-vfs176p85ld4agpefpojbov4v41llbge.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "551540169658-lhobnlpo6vodot8e0dvegkbnqh6c2f4f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.petra.healthylifeapp",
+            "certificate_hash": "b57973ce6e59ca3636d8ca6448ae6b7bfaae3baf"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKKNObmy7YW6PlKdsxp2eK0rpgrp8no5E"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
