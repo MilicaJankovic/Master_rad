@@ -82,6 +82,7 @@ public class Login extends AppCompatActivity {
 
         mGoogleSignInButton = (SignInButton) findViewById(R.id.google_sign_in_button);
         findViewById(R.id.button_sign_out);
+
         mGoogleSignInButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -93,6 +94,9 @@ public class Login extends AppCompatActivity {
                         break;
 
                 }
+
+                Intent intent = new Intent(v.getContext(), MainActivity.class);
+                startActivity(intent);
             }
 
         });
@@ -120,7 +124,6 @@ public class Login extends AppCompatActivity {
                 final GoogleApiClient client = mGoogleApiClient;
                 result.getSignInAccount();
             } else {
-
 
                 //handleSignInResult(...);
             }
