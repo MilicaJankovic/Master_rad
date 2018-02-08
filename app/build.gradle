@@ -12,6 +12,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -32,10 +33,12 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.facebook.android:facebook-android-sdk:4.6.0'
     compile 'junit:junit:4.12'
-    compile 'com.google.android.gms:play-services:8.3.0'
+    compile 'com.google.android.gms:play-services:11.8.0'
 
     //compile 'com.google.android.gms:play-services-auth:8.3.0'
-    compile 'com.google.android.gms:play-services-fitness:8.3.0'
+    compile 'com.google.android.gms:play-services-fitness:11.8.0'
+    compile 'com.google.android.gms:play-services-awareness:11.8.0'
+    compile 'com.android.support:multidex:1.0.0'
 
 }
 apply plugin: 'com.google.gms.google-services'

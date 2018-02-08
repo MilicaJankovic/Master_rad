@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //                .addOnConnectionFailedListener(this)
 //                .build();
 //
-//        mApiClient.connect();
+
 
         if (savedInstanceState != null) {
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
@@ -72,14 +72,18 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         mApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
+                .addApi(ActivityRecognition.API)
                 .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .enableAutoManage(this, 0, this)
                 .build();
+        mApiClient.connect();
 
         initViews();
         initCallbacks();
+
+
 
     }
 
@@ -131,8 +135,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         Fitness.SensorsApi.findDataSources(mApiClient, dataSourceRequest)
                 .setResultCallback(dataSourcesResultCallback);
+
         Fitness.RecordingApi.subscribe(mApiClient, DataType.TYPE_STEP_COUNT_DELTA)
                 .setResultCallback(mSubscribeResultCallback);
+        if(mApiClient.isConnected()){
+            Log.i("mApiClient", "Google_Api_Client: It was connected on (onConnected) function, working as it should.");
+        }
+        else{
+            Log.i("mApiClient", "Google_Api_Client: It was NOT connected on (onConnected) function, It is definetly bugged.");
+        }
+
 
     }
     private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
@@ -205,15 +217,15 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     protected void onStop() {
         super.onStop();
 
-        Fitness.SensorsApi.remove( mApiClient, this )
-                .setResultCallback(new ResultCallback<Status>() {
-                    @Override
-                    public void onResult(Status status) {
-                        if (status.isSuccess()) {
-                            mApiClient.disconnect();
-                        }
-                    }
-                });
+//        Fitness.SensorsApi.remove( mApiClient, this )
+//                .setResultCallback(new ResultCallback<Status>() {
+//                    @Override
+//                    public void onResult(Status status) {
+//                        if (status.isSuccess()) {
+//                            mApiClient.disconnect();
+//                        }
+//                    }
+//                });
     }
 
     @Override
