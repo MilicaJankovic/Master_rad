@@ -127,6 +127,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         t.start();
         /************************END STEPS*********************************/
+
+
+        /****************OPEN HISTORY CLICK********************************/
+        Button button= (Button)findViewById(R.id.button_viewHistory);
+        button.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                OpenHistoryActivity(view);
+            }
+        });
     }
 
     @Override
@@ -249,43 +259,43 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     }
 
     private void initCallbacks() {
-        mSubscribeResultCallback = new ResultCallback<Status>() {
-            @Override
-            public void onResult(@NonNull Status status) {
-                if (status.isSuccess()) {
-                    if (status.getStatusCode() == FitnessStatusCodes.SUCCESS_ALREADY_SUBSCRIBED) {
-                        Log.e("RecordingAPI", "Already subscribed to the Recording API");
-                    } else {
-                        Log.e("RecordingAPI", "Subscribed to the Recording API");
-                    }
-                }
-            }
-        };
-
-        mCancelSubscriptionResultCallback = new ResultCallback<Status>() {
-            @Override
-            public void onResult(@NonNull Status status) {
-                if (status.isSuccess()) {
-                    Log.e("RecordingAPI", "Canceled subscriptions!");
-                } else {
-                    // Subscription not removed
-                    Log.e("RecordingAPI", "Failed to cancel subscriptions");
-                }
-            }
-        };
-
-        mListSubscriptionsResultCallback = new ResultCallback<ListSubscriptionsResult>() {
-            @Override
-            public void onResult(@NonNull ListSubscriptionsResult listSubscriptionsResult) {
-                for (Subscription subscription : listSubscriptionsResult.getSubscriptions()) {
-                    DataType dataType = subscription.getDataType();
-                    Log.e("RecordingAPI", dataType.getName());
-                    for (Field field : dataType.getFields()) {
-                        Log.e("RecordingAPI", field.toString());
-                    }
-                }
-            }
-        };
+//        mSubscribeResultCallback = new ResultCallback<Status>() {
+//            @Override
+//            public void onResult(@NonNull Status status) {
+//                if (status.isSuccess()) {
+//                    if (status.getStatusCode() == FitnessStatusCodes.SUCCESS_ALREADY_SUBSCRIBED) {
+//                        Log.e("RecordingAPI", "Already subscribed to the Recording API");
+//                    } else {
+//                        Log.e("RecordingAPI", "Subscribed to the Recording API");
+//                    }
+//                }
+//            }
+//        };
+//
+//        mCancelSubscriptionResultCallback = new ResultCallback<Status>() {
+//            @Override
+//            public void onResult(@NonNull Status status) {
+//                if (status.isSuccess()) {
+//                    Log.e("RecordingAPI", "Canceled subscriptions!");
+//                } else {
+//                    // Subscription not removed
+//                    Log.e("RecordingAPI", "Failed to cancel subscriptions");
+//                }
+//            }
+//        };
+//
+//        mListSubscriptionsResultCallback = new ResultCallback<ListSubscriptionsResult>() {
+//            @Override
+//            public void onResult(@NonNull ListSubscriptionsResult listSubscriptionsResult) {
+//                for (Subscription subscription : listSubscriptionsResult.getSubscriptions()) {
+//                    DataType dataType = subscription.getDataType();
+//                    Log.e("RecordingAPI", dataType.getName());
+//                    for (Field field : dataType.getFields()) {
+//                        Log.e("RecordingAPI", field.toString());
+//                    }
+//                }
+//            }
+//        };
     }
 
     /**************************STEPS METHODS*************************/
@@ -327,7 +337,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                         dataSet.isEmpty()
                                                 ? 0
                                                 : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
-                                Log.i(TAG, "Total steps: " + total);
+                             //   Log.i(TAG, "Total steps: " + total);
                                 ShowNumberOfSteps(String.valueOf(total));
                             }
                         })
@@ -351,6 +361,14 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
    }
 /****************************************END STEP METHODS**************************************************/
 
+
+/***************************************ON CLICK EVENT FOR HISOTRY API************************************/
+
+public void OpenHistoryActivity(View view)
+{
+    Intent history = new Intent(MainActivity.this, ViewHistoryAPI.class);
+    startActivity(history);
+}
 
 
 }

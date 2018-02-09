@@ -24,7 +24,7 @@
             tools:layout_editor_absoluteX="8dp" />
 
         <Button
-            android:id="@+id/button_id"
+            android:id="@+id/button_viewHistory"
             android:layout_height="wrap_content"
             android:layout_width="270dp"
             android:text="@string/buttonHistoryText"/>
