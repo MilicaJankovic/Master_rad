@@ -1,17 +1,22 @@
 package com.example.petra.healthylifeapp;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -19,23 +24,36 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.FitnessOptions;
 import com.google.android.gms.fitness.FitnessStatusCodes;
+import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
+import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataSource;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.data.Subscription;
 import com.google.android.gms.fitness.data.Value;
+import com.google.android.gms.fitness.request.DataReadRequest;
 import com.google.android.gms.fitness.request.DataSourcesRequest;
 import com.google.android.gms.fitness.request.OnDataPointListener;
 import com.google.android.gms.fitness.request.SensorRequest;
+import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     public GoogleApiClient mApiClient;
 
@@ -43,27 +61,17 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private static final String AUTH_PENDING = "auth_state_pending";
     private boolean authInProgress = false;
 
-    private Button mCancelSubscriptionsBtn;
-    private Button mShowSubscriptionsBtn;
-
     private ResultCallback<Status> mSubscribeResultCallback;
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
 
-
+    public static final String TAG = "StepCounter";
+    private static final int REQUEST_OAUTH_REQUEST_CODE = 0x1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-//        mApiClient = new GoogleApiClient.Builder(this)
-//                .addApi(ActivityRecognition.API)
-//                .addConnectionCallbacks(this)
-//                .addOnConnectionFailedListener(this)
-//                .build();
-//
-
 
         if (savedInstanceState != null) {
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
@@ -73,39 +81,54 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
                 .addApi(ActivityRecognition.API)
+                .addApi(Fitness.HISTORY_API)
                 .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .enableAutoManage(this, 0, this)
                 .build();
         mApiClient.connect();
-
-        initViews();
         initCallbacks();
 
-
-
-    }
-
-    public void onClick(View v) {
-        switch(v.getId()) {
-            case R.id.btn_cancel_subscriptions: {
-                cancelSubscriptions();
-                break;
-            }
-            case R.id.btn_show_subscriptions: {
-                showSubscriptions();
-                break;
-            }
+        /**********************STEPS**************************/
+        FitnessOptions fitnessOptions =
+                FitnessOptions.builder()
+                        .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                        .build();
+        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+            GoogleSignIn.requestPermissions(
+                    this,
+                    REQUEST_OAUTH_REQUEST_CODE,
+                    GoogleSignIn.getLastSignedInAccount(this),
+                    fitnessOptions);
+        } else {
+            subscribe();
         }
-    }
-    private void initViews() {
-        mCancelSubscriptionsBtn = (Button) findViewById(R.id.btn_cancel_subscriptions);
-        mShowSubscriptionsBtn = (Button) findViewById(R.id.btn_show_subscriptions);
+        /******call read steps every  2sec(optional), can be implemented to call show passed steps only once on create *********/
+        Thread t = new Thread() {
 
-        mCancelSubscriptionsBtn.setOnClickListener(this);
-        mShowSubscriptionsBtn.setOnClickListener( this);
+            @Override
+            public void run() {
+                try {
+                    while (!isInterrupted()) {
+                        Thread.sleep(1000);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                readData();
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                }
+            }
+        };
+
+        t.start();
+        /************************END STEPS*********************************/
     }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -138,6 +161,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         Fitness.RecordingApi.subscribe(mApiClient, DataType.TYPE_STEP_COUNT_DELTA)
                 .setResultCallback(mSubscribeResultCallback);
+
         if(mApiClient.isConnected()){
             Log.i("mApiClient", "Google_Api_Client: It was connected on (onConnected) function, working as it should.");
         }
@@ -167,11 +191,12 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     }
     @Override
     public void onConnectionSuspended(int i) {
-
+        Log.e("HistoryAPI", "onConnectionSuspended");
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.e("HistoryAPI", "onConnectionFailed");
         if( !authInProgress ) {
             try {
                 authInProgress = true;
@@ -186,15 +211,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     @Override
     public void onDataPoint(DataPoint dataPoint) {
-        for( final Field field : dataPoint.getDataType().getFields() ) {
-            final Value value = dataPoint.getValue( field );
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Field: " + field.getName() + " Value: " + value, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
     }
 
     @Override
@@ -211,21 +227,19 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         } else {
             Log.e("GoogleFit", "requestCode NOT request_oauth");
         }
+
+
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == REQUEST_OAUTH_REQUEST_CODE) {
+                subscribe();
+            }
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
 
-//        Fitness.SensorsApi.remove( mApiClient, this )
-//                .setResultCallback(new ResultCallback<Status>() {
-//                    @Override
-//                    public void onResult(Status status) {
-//                        if (status.isSuccess()) {
-//                            mApiClient.disconnect();
-//                        }
-//                    }
-//                });
     }
 
     @Override
@@ -274,16 +288,69 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         };
     }
 
+    /**************************STEPS METHODS*************************/
 
-    private void showSubscriptions() {
-        Fitness.RecordingApi.listSubscriptions(mApiClient)
-                .setResultCallback(mListSubscriptionsResultCallback);
+
+    /** Records step data by requesting a subscription to background step data. */
+    public void subscribe() {
+        // To create a subscription, invoke the Recording API. As soon as the subscription is
+        // active, fitness data will start recording.
+        Fitness.getRecordingClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .subscribe(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                .addOnCompleteListener(
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    Log.i(TAG, "Successfully subscribed!");
+                                } else {
+                                    Log.w(TAG, "There was a problem subscribing.", task.getException());
+                                }
+                            }
+                        });
     }
 
-    private void cancelSubscriptions() {
-        Fitness.RecordingApi.unsubscribe(mApiClient, DataType.TYPE_STEP_COUNT_DELTA)
-                .setResultCallback(mCancelSubscriptionResultCallback);
+    /**
+     * Reads the current daily step total, computed from midnight of the current day on the device's
+     * current timezone.
+     */
+    private String readData() {
+        final String[] totalSteps = {""};
+
+        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readDailyTotal(DataType.TYPE_STEP_COUNT_DELTA)
+                .addOnSuccessListener(
+                        new OnSuccessListener<DataSet>() {
+                            @Override
+                            public void onSuccess(DataSet dataSet) {
+                                long total =
+                                        dataSet.isEmpty()
+                                                ? 0
+                                                : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
+                                Log.i(TAG, "Total steps: " + total);
+                                ShowNumberOfSteps(String.valueOf(total));
+                            }
+                        })
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.w(TAG, "There was a problem getting the step count.", e);
+                            }
+                        });
+        return totalSteps[0];
+
     }
+
+   public void ShowNumberOfSteps(String steps)
+   {
+       TextView textViewSteps = (TextView)findViewById(R.id.title_text_view);
+       if(textViewSteps.getText() != steps && steps != "")
+            textViewSteps.setText(steps);
+
+   }
+/****************************************END STEP METHODS**************************************************/
+
 
 
 }

@@ -5,24 +5,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.petra.healthylifeapp.MainActivity">
-
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="368dp"
-        android:layout_height="495dp"
-        android:orientation="vertical"
-        tools:layout_editor_absoluteY="8dp"
-        tools:layout_editor_absoluteX="8dp">
+        android:id="@+id/activity_linear_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/title_text_view"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:text="00"
+            android:textSize="20dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            tools:layout_editor_absoluteY="0dp"
+            tools:layout_editor_absoluteX="8dp" />
 
         <Button
-            android:id="@+id/btn_show_subscriptions"
-            android:layout_width="match_parent"
+            android:id="@+id/button_id"
             android:layout_height="wrap_content"
-            android:text="Show Subscriptions"/>
-        <Button
-            android:id="@+id/btn_cancel_subscriptions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Cancel Subscriptions"/>
+            android:layout_width="270dp"
+            android:text="@string/buttonHistoryText"/>
+
     </LinearLayout>
 
 
