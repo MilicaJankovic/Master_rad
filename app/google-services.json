@@ -1,33 +1,35 @@
 {
   "project_info": {
-    "project_number": "551540169658",
-    "project_id": "firebase-healthy-life-app"
+    "project_number": "403655114672",
+    "firebase_url": "https://healthylifeapp-194818.firebaseio.com",
+    "project_id": "healthylifeapp-194818",
+    "storage_bucket": "healthylifeapp-194818.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:551540169658:android:f1707f2cd5a1d456",
+        "mobilesdk_app_id": "1:403655114672:android:f1707f2cd5a1d456",
         "android_client_info": {
           "package_name": "com.example.petra.healthylifeapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "551540169658-vfs176p85ld4agpefpojbov4v41llbge.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
-          "client_id": "551540169658-lhobnlpo6vodot8e0dvegkbnqh6c2f4f.apps.googleusercontent.com",
+          "client_id": "403655114672-5hnh4v36q8p924q1fs3upbtc9ov2rlu1.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.petra.healthylifeapp",
-            "certificate_hash": "b57973ce6e59ca3636d8ca6448ae6b7bfaae3baf"
+            "certificate_hash": "05a3b5545d588a26549fde300d1be647d5d4b30a"
           }
+        },
+        {
+          "client_id": "403655114672-426f9sov5si23b2jq4dkcm1krri4vhk1.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAKKNObmy7YW6PlKdsxp2eK0rpgrp8no5E"
+          "current_key": "AIzaSyCg4TPFCCHhEUUYlwl_YxET1gFAXY1A9zo"
         }
       ],
       "services": {
@@ -35,11 +37,16 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "403655114672-426f9sov5si23b2jq4dkcm1krri4vhk1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
-          "status": 1
+          "status": 2
         }
       }
     }

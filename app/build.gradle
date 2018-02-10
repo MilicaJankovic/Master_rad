@@ -4,7 +4,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "26.0.1"
+    //buildToolsVersion "26.0.1"
     defaultConfig {
         applicationId "com.example.petra.healthylifeapp"
         minSdkVersion 15
@@ -33,6 +33,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.facebook.android:facebook-android-sdk:4.6.0'
     compile 'junit:junit:4.12'
+    compile 'com.google.firebase:firebase-auth:11.8.0'
     compile 'com.google.android.gms:play-services:11.8.0'
 
     //compile 'com.google.android.gms:play-services-auth:8.3.0'

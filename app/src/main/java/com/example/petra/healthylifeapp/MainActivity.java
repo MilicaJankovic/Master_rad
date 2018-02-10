@@ -4,9 +4,12 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +20,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.awareness.Awareness;
+import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
+import com.google.android.gms.awareness.snapshot.WeatherResult;
+import com.google.android.gms.awareness.state.HeadphoneState;
+import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -53,20 +61,18 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    public GoogleApiClient mApiClient;
-
+    public static final String TAG = "StepCounter";
     private static final int REQUEST_OAUTH = 1;
     private static final String AUTH_PENDING = "auth_state_pending";
+    private static final int REQUEST_OAUTH_REQUEST_CODE = 0x1001;
+    public GoogleApiClient mApiClient;
     private boolean authInProgress = false;
-
     private ResultCallback<Status> mSubscribeResultCallback;
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
-
-    public static final String TAG = "StepCounter";
-    private static final int REQUEST_OAUTH_REQUEST_CODE = 0x1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 .addApi(Fitness.RECORDING_API)
                 .addApi(ActivityRecognition.API)
                 .addApi(Fitness.HISTORY_API)
+                .addApi(Awareness.API)
                 .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -130,8 +137,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
 
         /****************OPEN HISTORY CLICK********************************/
-        Button button= (Button)findViewById(R.id.button_viewHistory);
-        button.setOnClickListener(new View.OnClickListener(){
+        Button button = (Button) findViewById(R.id.button_viewHistory);
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 OpenHistoryActivity(view);
@@ -144,6 +151,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         super.onStart();
         mApiClient.connect();
     }
+
     @Override
     public void onConnected(@Nullable Bundle bundle) {
 //        Intent intent = new Intent(this, ActivityRecognizedService.class);
@@ -151,15 +159,15 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 3000, pendingIntent);
 
         DataSourcesRequest dataSourceRequest = new DataSourcesRequest.Builder()
-                .setDataTypes( DataType.TYPE_STEP_COUNT_CUMULATIVE )
-                .setDataSourceTypes( DataSource.TYPE_RAW )
+                .setDataTypes(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                .setDataSourceTypes(DataSource.TYPE_RAW)
                 .build();
 
         ResultCallback<DataSourcesResult> dataSourcesResultCallback = new ResultCallback<DataSourcesResult>() {
             @Override
             public void onResult(DataSourcesResult dataSourcesResult) {
-                for( DataSource dataSource : dataSourcesResult.getDataSources() ) {
-                    if( DataType.TYPE_STEP_COUNT_CUMULATIVE.equals( dataSource.getDataType() ) ) {
+                for (DataSource dataSource : dataSourcesResult.getDataSources()) {
+                    if (DataType.TYPE_STEP_COUNT_CUMULATIVE.equals(dataSource.getDataType())) {
                         registerFitnessDataListener(dataSource, DataType.TYPE_STEP_COUNT_CUMULATIVE);
                     }
                 }
@@ -172,33 +180,150 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         Fitness.RecordingApi.subscribe(mApiClient, DataType.TYPE_STEP_COUNT_DELTA)
                 .setResultCallback(mSubscribeResultCallback);
 
-        if(mApiClient.isConnected()){
+        if (mApiClient.isConnected()) {
             Log.i("mApiClient", "Google_Api_Client: It was connected on (onConnected) function, working as it should.");
-        }
-        else{
+        } else {
             Log.i("mApiClient", "Google_Api_Client: It was NOT connected on (onConnected) function, It is definetly bugged.");
         }
 
 
-    }
-    private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
-
-        SensorRequest request = new SensorRequest.Builder()
-                .setDataSource( dataSource )
-                .setDataType( dataType )
-                .setSamplingRate( 3, TimeUnit.SECONDS )
-                .build();
-
-        Fitness.SensorsApi.add( mApiClient, request, this )
-                .setResultCallback(new ResultCallback<Status>() {
+        //check if the headphones are connected
+        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
+                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
                     @Override
-                    public void onResult(Status status) {
-                        if (status.isSuccess()) {
-                            Log.e( "GoogleFit", "SensorApi successfully added" );
+                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
+                        if (headphoneStateResult.getStatus().isSuccess()) {
+                            HeadphoneState headphoneState =
+                                    headphoneStateResult.getHeadphoneState();
+                            int state = headphoneState.getState();
+
+                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
+
+                            if (state == HeadphoneState.PLUGGED_IN) {
+                                // Headphones plugged in
+                                textViewHeadphones.setText("Headphones plugged in...");
+                            } else if (state == HeadphoneState.UNPLUGGED) {
+                                // Headphones unplugged
+                                textViewHeadphones.setText("Headphones unplugged...");
+                            }
+                        }
+                    }
+                });
+
+        detectWeather();
+
+    }
+
+
+    private void detectWeather() {
+        if (!checkLocationPermission()) {
+            return;
+        }
+
+        Awareness.SnapshotApi.getWeather(mApiClient)
+                .setResultCallback(new ResultCallback<WeatherResult>() {
+                    @Override
+                    public void onResult(@NonNull WeatherResult weatherResult) {
+                        Weather weather = weatherResult.getWeather();
+//                        Log.e("Tuts+", "Temp: " + weather.getTemperature(Weather.FAHRENHEIT));
+//                        Log.e("Tuts+", "Feels like: " + weather.getFeelsLikeTemperature(Weather.FAHRENHEIT));
+//                        Log.e("Tuts+", "Dew point: " + weather.getDewPoint(Weather.FAHRENHEIT));
+//                        Log.e("Tuts+", "Humidity: " + weather.getHumidity() );
+
+                        if(weather != null) {
+                            TextView txtWeather = (TextView) findViewById(R.id.txtWeather);
+                            txtWeather.setText("Temp: " + weather.getTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
+                            txtWeather.append("Feels like: " + weather.getFeelsLikeTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
+                            txtWeather.append("Humidity: " + weather.getHumidity() + System.getProperty("line.separator"));
+
+                            switch (weather.getConditions()[0]) {
+                                case Weather.CONDITION_CLOUDY:
+                                    txtWeather.append("It's cloudy! It might start raining!");
+                                    break;
+                                case Weather.CONDITION_CLEAR:
+                                    txtWeather.append("It's clear! Go out!");
+                                    break;
+                                case Weather.CONDITION_FOGGY:
+                                    txtWeather.append("It's foggy! Watch out!");
+                                    break;
+                                case Weather.CONDITION_RAINY:
+                                    txtWeather.append("It's rainy! Bring the umbrella!");
+                                    break;
+                                case Weather.CONDITION_SNOWY:
+                                    txtWeather.append("It's snowy! Snowman time!");
+                                    break;
+                                case Weather.CONDITION_ICY:
+                                    txtWeather.append("It's icy! Carefull ride!");
+                                    break;
+                            }
+
                         }
                     }
                 });
     }
+
+
+    private boolean checkLocationPermission() {
+        if (!hasLocationPermission()) {
+            Log.e("Tuts+", "Does not have location permission granted");
+            requestLocationPermission();
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private final static int REQUEST_PERMISSION_RESULT_CODE = 42;
+
+    private void requestLocationPermission() {
+        ActivityCompat.requestPermissions(
+                MainActivity.this,
+                new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                REQUEST_PERMISSION_RESULT_CODE);
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_PERMISSION_RESULT_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //granted
+                } else {
+                    Log.e("Tuts+", "Location permission denied.");
+                }
+            }
+        }
+    }
+
+
+    private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
+
+        SensorRequest request = new SensorRequest.Builder()
+                .setDataSource(dataSource)
+                .setDataType(dataType)
+                .setSamplingRate(3, TimeUnit.SECONDS)
+                .build();
+
+        Fitness.SensorsApi.add(mApiClient, request, this)
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(Status status) {
+                        if (status.isSuccess()) {
+                            Log.e("GoogleFit", "SensorApi successfully added");
+                        }
+                    }
+                });
+    }
+
     @Override
     public void onConnectionSuspended(int i) {
         Log.e("HistoryAPI", "onConnectionSuspended");
@@ -207,15 +332,15 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.e("HistoryAPI", "onConnectionFailed");
-        if( !authInProgress ) {
+        if (!authInProgress) {
             try {
                 authInProgress = true;
-                connectionResult.startResolutionForResult( MainActivity.this, REQUEST_OAUTH );
-            } catch(IntentSender.SendIntentException e ) {
+                connectionResult.startResolutionForResult(MainActivity.this, REQUEST_OAUTH);
+            } catch (IntentSender.SendIntentException e) {
 
             }
         } else {
-            Log.e( "GoogleFit", "authInProgress" );
+            Log.e("GoogleFit", "authInProgress");
         }
     }
 
@@ -225,14 +350,14 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if( requestCode == REQUEST_OAUTH ) {
+        if (requestCode == REQUEST_OAUTH) {
             authInProgress = false;
-            if( resultCode == RESULT_OK ) {
-                if( !mApiClient.isConnecting() && !mApiClient.isConnected() ) {
+            if (resultCode == RESULT_OK) {
+                if (!mApiClient.isConnecting() && !mApiClient.isConnected()) {
                     mApiClient.connect();
                 }
-            } else if( resultCode == RESULT_CANCELED ) {
-                Log.e( "GoogleFit", "RESULT_CANCELED" );
+            } else if (resultCode == RESULT_CANCELED) {
+                Log.e("GoogleFit", "RESULT_CANCELED");
             }
         } else {
             Log.e("GoogleFit", "requestCode NOT request_oauth");
@@ -301,7 +426,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     /**************************STEPS METHODS*************************/
 
 
-    /** Records step data by requesting a subscription to background step data. */
+    /**
+     * Records step data by requesting a subscription to background step data.
+     */
     public void subscribe() {
         // To create a subscription, invoke the Recording API. As soon as the subscription is
         // active, fitness data will start recording.
@@ -337,7 +464,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                         dataSet.isEmpty()
                                                 ? 0
                                                 : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
-                             //   Log.i(TAG, "Total steps: " + total);
+                                //   Log.i(TAG, "Total steps: " + total);
                                 ShowNumberOfSteps(String.valueOf(total));
                             }
                         })
@@ -352,23 +479,19 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     }
 
-   public void ShowNumberOfSteps(String steps)
-   {
-       TextView textViewSteps = (TextView)findViewById(R.id.title_text_view);
-       if(textViewSteps.getText() != steps && steps != "")
+    public void ShowNumberOfSteps(String steps) {
+        TextView textViewSteps = (TextView) findViewById(R.id.title_text_view);
+        if (textViewSteps.getText() != steps && steps != "")
             textViewSteps.setText(steps);
 
-   }
+    }
 /****************************************END STEP METHODS**************************************************/
 
 
-/***************************************ON CLICK EVENT FOR HISOTRY API************************************/
+    /***************************************ON CLICK EVENT FOR HISOTRY API************************************/
 
-public void OpenHistoryActivity(View view)
-{
-    Intent history = new Intent(MainActivity.this, ViewHistoryAPI.class);
-    startActivity(history);
-}
-
-
+    public void OpenHistoryActivity(View view) {
+        Intent history = new Intent(MainActivity.this, ViewHistoryAPI.class);
+        startActivity(history);
+    }
 }
