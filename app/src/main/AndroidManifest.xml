@@ -15,23 +15,27 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
-            android:parentActivityName=".Login">
+            android:parentActivityName=".FirebaseLogin">
 
             <!-- The meta-data tag is required if you support API level 15 and lower -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".Login" />
+                android:value=".FirebaseLogin" />
         </activity>
-        <activity android:name=".Login">
+        <activity
+            android:name=".FirebaseLogin"
+            android:label="@string/title_activity_firebase_login"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".ViewHistoryAPI"
+        <activity
+            android:name=".ViewHistoryAPI"
             android:parentActivityName=".MainActivity">
+
             <!-- The meta-data tag is required if you support API level 15 and lower -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -63,6 +67,19 @@
             android:name="com.google.android.nearby.messages.API_KEY"
             android:value="@string/google_play_services_key" />
 
+        <!-- <activity -->
+        <!-- android:name=".Login" -->
+        <!-- android:label="@string/title_activity_firebase_login" -->
+        <!-- android:theme="@style/AppTheme.NoActionBar"></activity> -->
+
+        <activity
+            android:name=".Login"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".ConfigureProfile"
+            android:label="@string/title_activity_configure_profile"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

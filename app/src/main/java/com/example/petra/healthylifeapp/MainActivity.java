@@ -55,6 +55,11 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -73,6 +78,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private ResultCallback<Status> mSubscribeResultCallback;
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
+
+    //firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,6 +153,32 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 OpenHistoryActivity(view);
             }
         });
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if(currentUser != null)
+        {
+//            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+//            if(analytics != null)
+//            {
+//                analytics.setUserProperty("Gender", "female");
+//                analytics.setUserProperty("Height", "167");
+//            }
+
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if(mDatabase != null)
+            {
+                writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
+            }
+        }
+    }
+
+
+    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
+        User user = new User(name, email, gender, height, weight);
+        mDatabase.child("users").child(userId).setValue(user);
+        mDatabase.push();
     }
 
     @Override
