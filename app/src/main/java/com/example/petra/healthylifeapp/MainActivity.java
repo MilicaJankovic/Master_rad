@@ -169,17 +169,17 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             mDatabase = FirebaseDatabase.getInstance().getReference();
             if(mDatabase != null)
             {
-                writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
+                //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
             }
         }
     }
 
 
-    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
-        User user = new User(name, email, gender, height, weight);
-        mDatabase.child("users").child(userId).setValue(user);
-        mDatabase.push();
-    }
+//    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
+//        User user = new User(name, email, gender, height, weight);
+//        mDatabase.child("users").child(userId).setValue(user);
+//        mDatabase.push();
+//    }
 
     @Override
     protected void onStart() {
