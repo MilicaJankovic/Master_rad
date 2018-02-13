@@ -2,8 +2,15 @@ package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -18,9 +25,15 @@ import com.facebook.FacebookSdk;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.fitness.Fitness;
@@ -36,6 +49,16 @@ import com.google.android.gms.fitness.request.DataReadRequest;
 import com.google.android.gms.fitness.request.DataUpdateRequest;
 import com.google.android.gms.fitness.result.DailyTotalResult;
 import com.google.android.gms.fitness.result.DataReadResponse;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -45,6 +68,7 @@ import com.google.android.gms.tasks.Task;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -58,11 +82,24 @@ import static java.text.DateFormat.getTimeInstance;
  * Created by Milica on 2/9/2018.
  */
 
-public class ViewHistoryAPI extends AppCompatActivity {
+public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     public static final String TAG = "BasicHistoryApi";
     // Identifier to identify the sign in activity.
     private static final int REQUEST_OAUTH_REQUEST_CODE = 1;
+
+    //barChart
+    private BarChart mChart;
+    private ArrayList<Integer> lastWeekSteps;
+
+
+    //google Maps API
+    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    GoogleApiClient mGoogleApiClient;
+    Location mLastLocation;
+    Marker mCurrLocationMarker;
+    LocationRequest mLocationRequest;
+    private GoogleMap mMap;
 
     static List<DataSet> dataSetsBucket;
     @Override
@@ -88,6 +125,56 @@ public class ViewHistoryAPI extends AppCompatActivity {
             insertAndReadData();
         }
 
+
+        //bar chart initialization
+        lastWeekSteps = new ArrayList<>();
+        mChart = (BarChart) findViewById(R.id.historyChart);
+
+        mChart.getDescription().setEnabled(false);
+
+
+        mChart.setFitBars(true);
+
+
+        //google maps initialization
+        //get location on google map
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            checkLocationPermission();
+        }
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+    }
+        protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        mGoogleApiClient.connect();
+
+    }
+
+
+    private void setData(int count)
+    {
+        ArrayList<BarEntry> yVals = new ArrayList<>();
+
+        for(int i = 0; i < count; i++){
+            yVals.add(new BarEntry(i, lastWeekSteps.get(i)));
+        }
+
+        BarDataSet set = new BarDataSet(yVals, "History Data Set");
+        set.setColors(ColorTemplate.MATERIAL_COLORS);
+        set.setDrawValues(true);
+
+        BarData data = new BarData(set);
+
+        mChart.setData(data);
+        mChart.invalidate();
+        mChart.animateY(500);
     }
 
     @Override
@@ -99,6 +186,57 @@ public class ViewHistoryAPI extends AppCompatActivity {
             }
         }
 
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+        //Initialize Google Play Services
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                buildGoogleApiClient();
+                mMap.setMyLocationEnabled(true);
+            }
+        } else {
+            buildGoogleApiClient();
+            mMap.setMyLocationEnabled(true);
+        }
+
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+    }
+    public boolean checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Asking user if explanation is needed
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+                //Prompt the user once explanation has been shown
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                        MY_PERMISSIONS_REQUEST_LOCATION);
+
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                        MY_PERMISSIONS_REQUEST_LOCATION);
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -212,7 +350,7 @@ public class ViewHistoryAPI extends AppCompatActivity {
         // Setting a start and end date using a range of 1 week before this moment.
         Calendar cal = Calendar.getInstance();
         Date now = new Date();
-        cal.setTime(now);
+        cal.add(Calendar.DATE, -1);
         long endTime = cal.getTimeInMillis();
         cal.add(Calendar.WEEK_OF_YEAR, -1);
         long startTime = cal.getTimeInMillis();
@@ -253,8 +391,7 @@ public class ViewHistoryAPI extends AppCompatActivity {
         // If the DataReadRequest object specified aggregated data, dataReadResult will be returned
         // as buckets containing DataSets, instead of just DataSets.
         if (dataReadResult.getBuckets().size() > 0) {
-            Log.i(
-                    TAG, "Number of returned buckets of DataSets is: " + dataReadResult.getBuckets().size());
+            Log.i(TAG, "Number of returned buckets of DataSets is: " + dataReadResult.getBuckets().size());
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
 
@@ -287,14 +424,16 @@ public class ViewHistoryAPI extends AppCompatActivity {
             for (Field field : dp.getDataType().getFields()) {
 
                 Log.i(TAG, "\tField: " + field.getName() + " Value: " + dp.getValue(field));
-               UpdateHistoryTextView(String.valueOf(dp.getValue(field)), dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+               // UpdateHistoryTextView(String.valueOf(dp.getValue(field)), dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+                lastWeekSteps.add(dp.getValue(field).asInt());
             }
         }
+        setData(lastWeekSteps.size());
 
     }
 
     public  void UpdateHistoryTextView(String steps, String endDate) {
-        TextView textViewSteps = (TextView) findViewById(R.id.history_text_view);
+    //    TextView textViewSteps = (TextView) findViewById(R.id.history_text_view);
 
 
 //                    SimpleDateFormat inFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -308,7 +447,7 @@ public class ViewHistoryAPI extends AppCompatActivity {
 //                    SimpleDateFormat outFormat = new SimpleDateFormat("EEEE");
 //                    String goal = outFormat.format(date);
 
-        textViewSteps.setText(textViewSteps.getText() + "\n" + endDate + " " + steps);
+     //   textViewSteps.setText(textViewSteps.getText() + "\n" + endDate + " " + steps);
 
 
 
@@ -452,5 +591,21 @@ public class ViewHistoryAPI extends AppCompatActivity {
     }
 
 
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+    }
 
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
 }
