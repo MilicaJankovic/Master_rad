@@ -3,4 +3,33 @@
     <string name="facebook_app_id">1683242371719364</string>
     <string name="buttonHistoryText">Show Walking History</string>
     <string name="historyTitle">Walking History in past 7 days</string>
+    <string name="google_play_services_key">AIzaSyCZXrOMibj--q42jq8eefHzuthiT5rUrEM</string>
+    <string name="title_activity_firebase_login">FirebaseLogin</string>
+    <!-- <string name="google_play_services_key">AIzaSyAUnx1zKxpqV_uSfa6w0VMl_1D3Mx3amTQ</string>-->
+
+
+    <string name="label_firebase_ui">FirebaseUI Auth</string>
+    <string name="desc_firebase_ui">Use the FirebaseUI-Android library to authenticate with Firebase.</string>
+
+    <string name="hint_user_id">User ID</string>
+    <string name="get_custom_token">Get Token</string>
+    <string name="sign_in">Sign In</string>
+    <string name="create_account">Create Account</string>
+    <string name="sign_out">Sign Out</string>
+
+    <string name="firebaseui_status_fmt">Firebase User: %s</string>
+    <string name="firebaseui_title_text">FirebaseUI Auth</string>
+
+    <string name="desc_firebase_lockup">Firebase logo and name</string>
+    <string name="auth_failed">Authentication failed</string>
+
+    <string name="google_status_fmt">Google User: %s</string>
+    <string name="google_title_text">Google Sign In</string>
+
+    <string name="signed_out">Signed Out</string>
+    <string name="disconnect">Disconnect</string>
+
+    <string name="firebase_status_fmt">Firebase User: %s</string>
+    <string name="firebase_user_management">Firebase User Management</string>
+    <string name="title_activity_configure_profile">ConfigureProfile</string>
 </resources>
