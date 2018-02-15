@@ -146,13 +146,24 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
 
         /****************OPEN HISTORY CLICK********************************/
-        Button button = (Button) findViewById(R.id.button_viewHistory);
-        button.setOnClickListener(new View.OnClickListener() {
+        Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
+        buttonHistory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 OpenHistoryActivity(view);
             }
         });
+
+        /****************OPEN CALENDAR CLICK********************************/
+        Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
+        buttonCalendar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                OpenCalenadrActivity(view);
+            }
+        });
+
+
 
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -528,5 +539,17 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     public void OpenHistoryActivity(View view) {
         Intent history = new Intent(MainActivity.this, ViewHistoryAPI.class);
         startActivity(history);
+    }
+
+
+    /***************************************ON CLICK EVENT FOR OPENING CALENDAR************************************/
+
+    public void OpenCalenadrActivity(View view) {
+        TextView textViewSteps = (TextView) findViewById(R.id.title_text_view);
+        Intent calendar = new Intent(MainActivity.this, CalendarActivity.class);
+        Bundle b = new Bundle();
+        b.putString("steps", textViewSteps.getText().toString());
+        calendar.putExtras(b); //parameter to next Intent
+        startActivity(calendar);
     }
 }

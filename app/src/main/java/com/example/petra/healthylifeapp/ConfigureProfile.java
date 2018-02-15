@@ -87,6 +87,9 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         {
             String UserID = getUser().getUid();
             User user = new User();
+
+            if(ds.child(UserID).getValue(User.class) != null)
+            {
             user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
             //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
             user.setGender(ds.child(UserID).getValue(User.class).getGender());
@@ -128,6 +131,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
 
             button1.setChecked(true);
         }
+    }
     }
 
     @Override

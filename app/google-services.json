@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "403655114672-94g7ot8lv0979aeplim36bkksvlht9pm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.petra.healthylifeapp",
+            "certificate_hash": "b57973ce6e59ca3636d8ca6448ae6b7bfaae3baf"
+          }
+        },
+        {
           "client_id": "403655114672-5hnh4v36q8p924q1fs3upbtc9ov2rlu1.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
