@@ -59,7 +59,9 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         }
         else
         {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
             mDatabase = FirebaseDatabase.getInstance().getReference();
+            mDatabase.keepSynced(true);
             if(mDatabase != null) {
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override

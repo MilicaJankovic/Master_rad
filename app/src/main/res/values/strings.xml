@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">HealthyLifeApp</string>
     <string name="facebook_app_id">1683242371719364</string>
+    <string name="fb_login_protocol_scheme">fb1683242371719364</string>
     <string name="buttonHistoryText">Show Walking History</string>
     <string name="historyTitle">Walking History in past 7 days</string>
     <string name="google_play_services_key">AIzaSyCZXrOMibj--q42jq8eefHzuthiT5rUrEM</string>
@@ -17,6 +18,9 @@
     <string name="create_account">Create Account</string>
     <string name="sign_out">Sign Out</string>
 
+    <string name="label_facebook_login">Firebase + Facebook Login</string>
+    <string name="desc_facebook_login">Use a Facebook Login credential to authenticate with Firebase.</string>
+
     <string name="firebaseui_status_fmt">Firebase User: %s</string>
     <string name="firebaseui_title_text">FirebaseUI Auth</string>
 
@@ -25,6 +29,9 @@
 
     <string name="google_status_fmt">Google User: %s</string>
     <string name="google_title_text">Google Sign In</string>
+
+    <string name="facebook_status_fmt">Facebook User: %s</string>
+    <string name="facebook_title_text">Facebook Login</string>
 
     <string name="signed_out">Signed Out</string>
     <string name="disconnect">Disconnect</string>

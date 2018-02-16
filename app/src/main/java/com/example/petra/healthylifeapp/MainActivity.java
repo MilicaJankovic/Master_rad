@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -88,109 +89,97 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState != null) {
-            authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
-        }
-
-        mApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Fitness.SENSORS_API)
-                .addApi(Fitness.RECORDING_API)
-                .addApi(ActivityRecognition.API)
-                .addApi(Fitness.HISTORY_API)
-                .addApi(Awareness.API)
-                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .enableAutoManage(this, 0, this)
-                .build();
-        mApiClient.connect();
-        initCallbacks();
-
-        /**********************STEPS**************************/
-        FitnessOptions fitnessOptions =
-                FitnessOptions.builder()
-                        .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
-                        .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
-                        .build();
-        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
-            GoogleSignIn.requestPermissions(
-                    this,
-                    REQUEST_OAUTH_REQUEST_CODE,
-                    GoogleSignIn.getLastSignedInAccount(this),
-                    fitnessOptions);
-        } else {
-            subscribe();
-        }
-        /******call read steps every  2sec(optional), can be implemented to call show passed steps only once on create *********/
-        Thread t = new Thread() {
-
-            @Override
-            public void run() {
-                try {
-                    while (!isInterrupted()) {
-                        Thread.sleep(1000);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                readData();
-                            }
-                        });
-                    }
-                } catch (InterruptedException e) {
-                }
-            }
-        };
-
-        t.start();
-        /************************END STEPS*********************************/
-
-
-        /****************OPEN HISTORY CLICK********************************/
-        Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
-        buttonHistory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                OpenHistoryActivity(view);
-            }
-        });
-
-        /****************OPEN CALENDAR CLICK********************************/
-        Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
-        buttonCalendar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                OpenCalenadrActivity(view);
-            }
-        });
-
-
-
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        if(currentUser != null)
-        {
-//            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
-//            if(analytics != null)
+        if(currentUser != null) {
+//            mDatabase = FirebaseDatabase.getInstance().getReference();
+//            if(mDatabase != null)
 //            {
-//                analytics.setUserProperty("Gender", "female");
-//                analytics.setUserProperty("Height", "167");
 //            }
 
-            mDatabase = FirebaseDatabase.getInstance().getReference();
-            if(mDatabase != null)
-            {
-                //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
+            if (savedInstanceState != null) {
+                authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
             }
+
+            mApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(Fitness.SENSORS_API)
+                    .addApi(Fitness.RECORDING_API)
+                    .addApi(ActivityRecognition.API)
+                    .addApi(Fitness.HISTORY_API)
+                    .addApi(Awareness.API)
+                    .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .enableAutoManage(this, 0, this)
+                    .build();
+            mApiClient.connect();
+            initCallbacks();
+
+            /**********************STEPS**************************/
+            FitnessOptions fitnessOptions =
+                    FitnessOptions.builder()
+                            .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                            .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                            .build();
+            if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+                GoogleSignIn.requestPermissions(
+                        this,
+                        REQUEST_OAUTH_REQUEST_CODE,
+                        GoogleSignIn.getLastSignedInAccount(this),
+                        fitnessOptions);
+            } else {
+                subscribe();
+            }
+            /******call read steps every  2sec(optional), can be implemented to call show passed steps only once on create *********/
+            Thread t = new Thread() {
+
+                @Override
+                public void run() {
+                    try {
+                        while (!isInterrupted()) {
+                            Thread.sleep(1000);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    readData();
+                                }
+                            });
+                        }
+                    } catch (InterruptedException e) {
+                    }
+                }
+            };
+
+            t.start();
+            /************************END STEPS*********************************/
+
+
+            /****************OPEN HISTORY CLICK********************************/
+            Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
+            buttonHistory.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    OpenHistoryActivity(view);
+                }
+            });
+
+            /****************OPEN CALENDAR CLICK********************************/
+            Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
+            buttonCalendar.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    OpenCalenadrActivity(view);
+                }
+            });
+
+        }
+        else{
+            Intent intent = new Intent(this, FirebaseLogin.class);
+            startActivity(intent);
         }
     }
 
-
-//    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
-//        User user = new User(name, email, gender, height, weight);
-//        mDatabase.child("users").child(userId).setValue(user);
-//        mDatabase.push();
-//    }
 
     @Override
     protected void onStart() {
@@ -551,5 +540,40 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         b.putString("steps", textViewSteps.getText().toString());
         calendar.putExtras(b); //parameter to next Intent
         startActivity(calendar);
+    }
+
+
+    /****************************************MENU*******************************************************/
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //return super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.action_buttons, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //return super.onOptionsItemSelected(item);
+
+        switch (item.getItemId()) {
+            case R.id.googleSetup:
+                // User chose the "google setup in FirebaseLogin" item, show the app settings UI...
+                Intent firebaseLogin = new Intent(this, FirebaseLogin.class);
+                startActivity(firebaseLogin);
+                return true;
+
+            case R.id.configureProfile:
+                // User chose the "configure profile, this page" action, mark the current item
+                // as a favorite...
+                Intent configure = new Intent(this, ConfigureProfile.class);
+                startActivity(configure);
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
