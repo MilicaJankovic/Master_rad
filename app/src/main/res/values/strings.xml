@@ -2,6 +2,7 @@
     <string name="app_name">HealthyLifeApp</string>
     <string name="facebook_app_id">1683242371719364</string>
     <string name="buttonHistoryText">Show Walking History</string>
+    <string name="historyTitle">Walking History in past 7 days</string>
     <string name="google_play_services_key">AIzaSyCZXrOMibj--q42jq8eefHzuthiT5rUrEM</string>
     <string name="title_activity_firebase_login">FirebaseLogin</string>
     <!-- <string name="google_play_services_key">AIzaSyAUnx1zKxpqV_uSfa6w0VMl_1D3Mx3amTQ</string>-->
@@ -31,4 +32,6 @@
     <string name="firebase_status_fmt">Firebase User: %s</string>
     <string name="firebase_user_management">Firebase User Management</string>
     <string name="title_activity_configure_profile">ConfigureProfile</string>
+
+    <string name="button_showcalendar_text">Calendar</string>
 </resources>

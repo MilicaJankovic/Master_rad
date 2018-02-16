@@ -93,7 +93,7 @@ public class Login extends AppCompatActivity {
                 switch (v.getId()) {
                     // ...
                     case R.id.button_sign_out:
-                      signOut();
+                        signOut();
                         break;
 
                 }

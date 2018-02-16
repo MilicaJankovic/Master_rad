@@ -59,15 +59,79 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         }
         else
         {
-            parseUserDetails(getUser());
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if(mDatabase != null) {
+                mDatabase.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        parseUserDetails(dataSnapshot);
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                        // ...
+                    }
+                });
+            }
         }
     }
 
-    private void parseUserDetails(FirebaseUser user)
+    private void parseUserDetails(DataSnapshot dataSnapshot)
     {
         TextView txtUsername = (TextView) findViewById(R.id.txtUsername);
+        TextView txtHeight = (TextView) findViewById(R.id.txtHeight);
+        TextView txtWeight = (TextView) findViewById(R.id.txtWeight);
 
-        txtUsername.setText(user.getDisplayName());
+        for(DataSnapshot ds: dataSnapshot.getChildren() )
+        {
+            String UserID = getUser().getUid();
+            User user = new User();
+
+            if(ds.child(UserID).getValue(User.class) != null)
+            {
+            user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
+            //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
+            user.setGender(ds.child(UserID).getValue(User.class).getGender());
+            user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
+            user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
+            user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
+
+            txtUsername.setText(user.getUsername());
+            txtHeight.setText(user.getHeigh().toString());
+            txtWeight.setText(user.getWeight().toString());
+
+            RadioButton button = new RadioButton(this);
+
+            switch(user.getAchivement())
+            {
+                case "Keep Weight":
+                     button = (RadioButton)findViewById(R.id.radioKeepWeight);
+                     break;
+                case "Lose Weight":
+                    button = (RadioButton)findViewById(R.id.radioLoseWeight);
+                    break;
+                case "Gain Weight":
+                    button = (RadioButton)findViewById(R.id.radioGainWeight);
+                    break;
+            }
+
+            button.setChecked(true);
+
+            RadioButton button1 = new RadioButton(this);
+            switch(user.getGender())
+            {
+                case "Male":
+                    button1 = (RadioButton)findViewById(R.id.radioMale);
+                    break;
+                case "Female":
+                    button1 = (RadioButton)findViewById(R.id.radioFemale);
+                    break;
+            }
+
+            button1.setChecked(true);
+        }
+    }
     }
 
     @Override
@@ -150,48 +214,6 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString());
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
-
-    }
-
-    ValueEventListener userListener = new ValueEventListener() {
-        @Override
-        public void onDataChange(DataSnapshot dataSnapshot) {
-            // Get Post object and use the values to update the UI
-            User user = dataSnapshot.getValue(User.class);
-            // ...
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-            // Getting Post failed, log a message
-            Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
-            // ...
-        }
-    };
-
-    private void FindUser(View view) {
-        FirebaseUser firebaseUser = getUser();
-
-        if (firebaseUser != null) {
-            String child = "email";
-            String email = firebaseUser.getEmail();
-            Query query = mDatabase.orderByChild(child).equalTo(email);
-            query.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
-                        // TODO: handle the post here
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    // Getting Post failed, log a message
-                    Log.w("Canceled: ", "loadPost:onCancelled", databaseError.toException());
-                    // ...
-                }
-            });
-        }
 
     }
 }
