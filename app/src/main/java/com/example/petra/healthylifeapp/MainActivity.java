@@ -2,7 +2,10 @@ package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.os.Handler;
@@ -12,6 +15,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,6 +26,11 @@ import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
+import com.google.android.gms.awareness.fence.AwarenessFence;
+import com.google.android.gms.awareness.fence.DetectedActivityFence;
+import com.google.android.gms.awareness.fence.FenceState;
+import com.google.android.gms.awareness.fence.FenceUpdateRequest;
+import com.google.android.gms.awareness.fence.HeadphoneFence;
 import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
 import com.google.android.gms.awareness.state.HeadphoneState;
@@ -29,7 +38,9 @@ import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Result;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.ResultCallbacks;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
@@ -51,6 +62,7 @@ import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -61,6 +73,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
+import org.w3c.dom.Text;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -80,9 +94,17 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
 
+
+    public static final String FENCE_RECEIVER_ACTION =
+            "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
+
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
+
+
+    // Declare variables for pending intent and fence receiver.
+    private PendingIntent myPendingIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +113,13 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        //pending intent for headphones FENCES api
+        Intent intent1 = new Intent(FENCE_RECEIVER_ACTION);
+        myPendingIntent = PendingIntent.getBroadcast(this, 0, intent1, 0);
+        FenceReceiver receiver = new FenceReceiver();
+        registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+
 
         if(currentUser != null) {
 //            mDatabase = FirebaseDatabase.getInstance().getReference();
@@ -178,8 +207,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             Intent intent = new Intent(this, FirebaseLogin.class);
             startActivity(intent);
         }
-    }
 
+        //removeFence("headphoneFenceKey");
+    }
 
     @Override
     protected void onStart() {
@@ -222,31 +252,87 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
 
 
-        //check if the headphones are connected
-        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
-                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
-                    @Override
-                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
-                        if (headphoneStateResult.getStatus().isSuccess()) {
-                            HeadphoneState headphoneState =
-                                    headphoneStateResult.getHeadphoneState();
-                            int state = headphoneState.getState();
-
-                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
-
-                            if (state == HeadphoneState.PLUGGED_IN) {
-                                // Headphones plugged in
-                                textViewHeadphones.setText("Headphones plugged in...");
-                            } else if (state == HeadphoneState.UNPLUGGED) {
-                                // Headphones unplugged
-                                textViewHeadphones.setText("Headphones unplugged...");
-                            }
-                        }
-                    }
-                });
+//        //check if the headphones are connected
+//        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
+//                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
+//                    @Override
+//                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
+//                        if (headphoneStateResult.getStatus().isSuccess()) {
+//                            HeadphoneState headphoneState =
+//                                    headphoneStateResult.getHeadphoneState();
+//                            int state = headphoneState.getState();
+//
+//                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
+//
+//                            if (state == HeadphoneState.PLUGGED_IN) {
+//                                // Headphones plugged in
+//                                textViewHeadphones.setText("Headphones plugged in...");
+//                            } else if (state == HeadphoneState.UNPLUGGED) {
+//                                // Headphones unplugged
+//                                textViewHeadphones.setText("Headphones unplugged...");
+//                            }
+//                        }
+//                    }
+//                });
 
         detectWeather();
 
+
+
+        // Create a fence.
+        AwarenessFence headphoneFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
+        AwarenessFence activityFence = DetectedActivityFence.during(DetectedActivity.WALKING);
+        //AwarenessFence startedFence = DetectedActivityFence.starting(DetectedActivity.WALKING);
+//        AwarenessFence endedFence = DetectedActivityFence.stopping(DetectedActivity.WALKING);
+
+        AwarenessFence orFence = AwarenessFence.or(headphoneFence, activityFence);
+
+        createFence("orFenceKey", orFence);
+    }
+
+
+    private void createFence(final String fenceKey, AwarenessFence fence){
+        // Register the fence to receive callbacks.
+        // The fence key uniquely identifies the fence.
+        Awareness.FenceApi.updateFences(
+                mApiClient,
+                new FenceUpdateRequest.Builder()
+                        //.addFence("headphoneFenceKey", headphoneFence, myPendingIntent)
+                        .addFence(fenceKey, fence, myPendingIntent)
+                        .build())
+                .setResultCallback(new ResultCallback<Status>() {
+                    @Override
+                    public void onResult(@NonNull Status status) {
+                        if (status.isSuccess()) {
+                            Log.i(TAG, "Fence was successfully registered.");
+                        } else {
+                            Log.e(TAG, "Fence could not be registered: " + status);
+                        }
+                    }
+                });
+    }
+
+    private void removeFence(final String fenceKey) {
+        Awareness.FenceApi.updateFences(
+                mApiClient,
+                new FenceUpdateRequest.Builder()
+                        .removeFence(fenceKey)
+                        .build()).setResultCallback(new ResultCallbacks() {
+
+            @Override
+            public void onSuccess(@NonNull Result result) {
+                String info = "Fence " + fenceKey + " successfully removed.";
+                Log.i(TAG, info);
+                Toast.makeText(MainActivity.this, info, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onFailure(@NonNull Status status) {
+                String info = "Fence " + fenceKey + " could NOT be removed.";
+                Log.i(TAG, info);
+                Toast.makeText(MainActivity.this, info, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
 
@@ -574,6 +660,63 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+
+
+    public class FenceReceiver extends BroadcastReceiver {
+
+        private static final String TAG = "Fences API";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            FenceState fenceState = FenceState.extract(intent);
+
+            TextView textView = (TextView)findViewById(R.id.textViewHeadphones);
+            TextView textView1 = (TextView)findViewById(R.id.textViewActivity);
+
+            if (TextUtils.equals(fenceState.getFenceKey(), "headphoneFenceKey")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        Log.i(TAG, "Headphones are plugged in.");
+                        textView.setText("Headphones are plugged in.");
+                        break;
+                    case FenceState.FALSE:
+                        Log.i(TAG, "Headphones are NOT plugged in.");
+                        textView.setText("Headphones are NOT plugged in.");
+                        break;
+                    case FenceState.UNKNOWN:
+                        Log.i(TAG, "The headphone fence is in an unknown state.");
+                        break;
+                }
+            }
+            else if(TextUtils.equals(fenceState.getFenceKey(), "orFenceKey")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        textView1.setText("You are walking or heaphones are pluged.");
+                        break;
+                    case FenceState.FALSE:
+                        textView1.setText("You are not walking or headphoens are not plugged!");
+                        break;
+                }
+            }
+            else if(TextUtils.equals(fenceState.getFenceKey(), "activityFenceStarted")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        textView1.setText("You started walikng.");
+                        break;
+                }
+            }
+            else if(TextUtils.equals(fenceState.getFenceKey(), "activityFenceStopped")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        textView1.setText("You stopped walikng.");
+                        break;
+                }
+            }
+
+
         }
     }
 }
