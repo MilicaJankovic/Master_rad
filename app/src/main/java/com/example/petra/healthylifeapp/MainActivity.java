@@ -1,46 +1,41 @@
 package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
-import com.google.android.gms.awareness.fence.AwarenessFence;
-import com.google.android.gms.awareness.fence.DetectedActivityFence;
-import com.google.android.gms.awareness.fence.FenceState;
-import com.google.android.gms.awareness.fence.FenceUpdateRequest;
-import com.google.android.gms.awareness.fence.HeadphoneFence;
 import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
+import com.google.android.gms.awareness.snapshot.LocationResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
 import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.Result;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.ResultCallbacks;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
@@ -62,7 +57,9 @@ import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
-import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -71,12 +68,15 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-
-import org.w3c.dom.Text;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -94,122 +94,170 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
 
-
-    public static final String FENCE_RECEIVER_ACTION =
-            "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
-
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
+    private ArrayList<String> userLocations;
 
-    // Declare variables for pending intent and fence receiver.
-    private PendingIntent myPendingIntent;
+    LocationRequest mLocationRequest;
+    LocationServices mLastLocation;
+
+    Context ctx;
+
+    public Context getCtx() {
+        return ctx;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (savedInstanceState != null) {
+            authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
+        }
+
+        mApiClient = new GoogleApiClient.Builder(MainActivity.this)
+                .addApi(Fitness.SENSORS_API)
+                .addApi(Fitness.RECORDING_API)
+                .addApi(ActivityRecognition.API)
+                .addApi(Fitness.HISTORY_API)
+                .addApi(Awareness.API)
+                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .enableAutoManage(this, 0, this)
+                .build();
+        mApiClient.connect();
+        initCallbacks();
+
+        /**********************STEPS**************************/
+        FitnessOptions fitnessOptions =
+                FitnessOptions.builder()
+                        .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                        .build();
+        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+            GoogleSignIn.requestPermissions(
+                    this,
+                    REQUEST_OAUTH_REQUEST_CODE,
+                    GoogleSignIn.getLastSignedInAccount(this),
+                    fitnessOptions);
+        } else {
+            subscribe();
+        }
+        /******call read steps every  2sec(optional), can be implemented to call show passed steps only once on create *********/
+        Thread t = new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    while (!isInterrupted()) {
+                        Thread.sleep(1000);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                readData();
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                }
+            }
+        };
+
+        t.start();
+        /************************END STEPS*********************************/
+
+
+        /****************OPEN HISTORY CLICK********************************/
+        Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
+        buttonHistory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                OpenHistoryActivity(view);
+            }
+        });
+
+        /****************OPEN CALENDAR CLICK********************************/
+        Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
+        buttonCalendar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                OpenCalenadrActivity(view);
+            }
+        });
+
+
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        //pending intent for headphones FENCES api
-        Intent intent1 = new Intent(FENCE_RECEIVER_ACTION);
-        myPendingIntent = PendingIntent.getBroadcast(this, 0, intent1, 0);
-        FenceReceiver receiver = new FenceReceiver();
-        registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
-
-
-        if(currentUser != null) {
-//            mDatabase = FirebaseDatabase.getInstance().getReference();
-//            if(mDatabase != null)
+        if (currentUser != null) {
+//            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+//            if(analytics != null)
 //            {
+//                analytics.setUserProperty("Gender", "female");
+//                analytics.setUserProperty("Height", "167");
 //            }
 
-            if (savedInstanceState != null) {
-                authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
             }
-
-            mApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Fitness.SENSORS_API)
-                    .addApi(Fitness.RECORDING_API)
-                    .addApi(ActivityRecognition.API)
-                    .addApi(Fitness.HISTORY_API)
-                    .addApi(Awareness.API)
-                    .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .enableAutoManage(this, 0, this)
-                    .build();
-            mApiClient.connect();
-            initCallbacks();
-
-            /**********************STEPS**************************/
-            FitnessOptions fitnessOptions =
-                    FitnessOptions.builder()
-                            .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
-                            .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
-                            .build();
-            if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
-                GoogleSignIn.requestPermissions(
-                        this,
-                        REQUEST_OAUTH_REQUEST_CODE,
-                        GoogleSignIn.getLastSignedInAccount(this),
-                        fitnessOptions);
-            } else {
-                subscribe();
-            }
-            /******call read steps every  2sec(optional), can be implemented to call show passed steps only once on create *********/
-            Thread t = new Thread() {
-
-                @Override
-                public void run() {
-                    try {
-                        while (!isInterrupted()) {
-                            Thread.sleep(1000);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    readData();
-                                }
-                            });
-                        }
-                    } catch (InterruptedException e) {
-                    }
-                }
-            };
-
-            t.start();
-            /************************END STEPS*********************************/
-
-
-            /****************OPEN HISTORY CLICK********************************/
-            Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
-            buttonHistory.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    OpenHistoryActivity(view);
-                }
-            });
-
-            /****************OPEN CALENDAR CLICK********************************/
-            Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
-            buttonCalendar.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    OpenCalenadrActivity(view);
-                }
-            });
-
         }
-        else{
+
+        //get user locations from firebase
+        if(getUser() == null)
+        {
             Intent intent = new Intent(this, FirebaseLogin.class);
             startActivity(intent);
         }
+        else
+        {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if(mDatabase != null) {
+                mDatabase.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        getUserLocations(dataSnapshot);
+                    }
 
-        //removeFence("headphoneFenceKey");
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                        // ...
+                    }
+                });
+            }
+        }
+
     }
+
+    private Location getLocationDetails(Context mContext) {
+        Location location = null;
+        if (mApiClient != null) {
+            if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG,"Location Permission Denied");
+                return null;
+            }else {
+                location = LocationServices.FusedLocationApi.getLastLocation(mApiClient);
+                if(location != null)
+                    Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                else
+                    Log.w(TAG,"Location is null");
+
+            }
+        }
+        return location;
+    }
+//    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
+//        User user = new User(name, email, gender, height, weight);
+//        mDatabase.child("users").child(userId).setValue(user);
+//        mDatabase.push();
+//    }
 
     @Override
     protected void onStart() {
@@ -252,87 +300,57 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
 
 
-//        //check if the headphones are connected
-//        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
-//                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
-//                    @Override
-//                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
-//                        if (headphoneStateResult.getStatus().isSuccess()) {
-//                            HeadphoneState headphoneState =
-//                                    headphoneStateResult.getHeadphoneState();
-//                            int state = headphoneState.getState();
-//
-//                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
-//
-//                            if (state == HeadphoneState.PLUGGED_IN) {
-//                                // Headphones plugged in
-//                                textViewHeadphones.setText("Headphones plugged in...");
-//                            } else if (state == HeadphoneState.UNPLUGGED) {
-//                                // Headphones unplugged
-//                                textViewHeadphones.setText("Headphones unplugged...");
-//                            }
-//                        }
-//                    }
-//                });
-
-        detectWeather();
-
-
-
-        // Create a fence.
-        AwarenessFence headphoneFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
-        AwarenessFence activityFence = DetectedActivityFence.during(DetectedActivity.WALKING);
-        //AwarenessFence startedFence = DetectedActivityFence.starting(DetectedActivity.WALKING);
-//        AwarenessFence endedFence = DetectedActivityFence.stopping(DetectedActivity.WALKING);
-
-        AwarenessFence orFence = AwarenessFence.or(headphoneFence, activityFence);
-
-        createFence("orFenceKey", orFence);
-    }
-
-
-    private void createFence(final String fenceKey, AwarenessFence fence){
-        // Register the fence to receive callbacks.
-        // The fence key uniquely identifies the fence.
-        Awareness.FenceApi.updateFences(
-                mApiClient,
-                new FenceUpdateRequest.Builder()
-                        //.addFence("headphoneFenceKey", headphoneFence, myPendingIntent)
-                        .addFence(fenceKey, fence, myPendingIntent)
-                        .build())
-                .setResultCallback(new ResultCallback<Status>() {
+        //check if the headphones are connected
+        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
+                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
                     @Override
-                    public void onResult(@NonNull Status status) {
-                        if (status.isSuccess()) {
-                            Log.i(TAG, "Fence was successfully registered.");
-                        } else {
-                            Log.e(TAG, "Fence could not be registered: " + status);
+                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
+                        if (headphoneStateResult.getStatus().isSuccess()) {
+                            HeadphoneState headphoneState =
+                                    headphoneStateResult.getHeadphoneState();
+                            int state = headphoneState.getState();
+
+                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
+
+                            if (state == HeadphoneState.PLUGGED_IN) {
+                                // Headphones plugged in
+                                textViewHeadphones.setText("Headphones plugged in...");
+                            } else if (state == HeadphoneState.UNPLUGGED) {
+                                // Headphones unplugged
+                                textViewHeadphones.setText("Headphones unplugged...");
+                            }
                         }
                     }
                 });
-    }
 
-    private void removeFence(final String fenceKey) {
-        Awareness.FenceApi.updateFences(
-                mApiClient,
-                new FenceUpdateRequest.Builder()
-                        .removeFence(fenceKey)
-                        .build()).setResultCallback(new ResultCallbacks() {
+        detectWeather();
+        //GetAndStoreCurrentLocation();
 
-            @Override
-            public void onSuccess(@NonNull Result result) {
-                String info = "Fence " + fenceKey + " successfully removed.";
-                Log.i(TAG, info);
-                Toast.makeText(MainActivity.this, info, Toast.LENGTH_LONG).show();
-            }
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                GetAndStoreCurrentLocation();
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
 
-            @Override
-            public void onFailure(@NonNull Status status) {
-                String info = "Fence " + fenceKey + " could NOT be removed.";
-                Log.i(TAG, info);
-                Toast.makeText(MainActivity.this, info, Toast.LENGTH_LONG).show();
-            }
-        });
+        // Create the LocationRequest object
+//        LocationRequest mLocationRequest = LocationRequest.create()
+//                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+//                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+//                .setFastestInterval(1 * 1000);
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//        final Context context = getApplicationContext();
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                getLocationDetails(MainActivity.this);
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
     }
 
 
@@ -492,6 +510,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -628,95 +647,91 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         startActivity(calendar);
     }
 
+    /***************************************STORE LOCATIONS************************************/
+    public void GetAndStoreCurrentLocation()
+    {
+        if (ContextCompat.checkSelfPermission(
+                MainActivity.this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    12345
+            );
+        }
+        Log.w("GetLocation", "Getting location started...");
+        Awareness.SnapshotApi.getLocation(mApiClient)
+                .setResultCallback(new ResultCallback<LocationResult>() {
+                    @Override
+                    public void onResult(@NonNull LocationResult locationResult) {
+                        if (!locationResult.getStatus().isSuccess()) {
+                            Log.w(TAG, "Could not get location.");
+                            return;
+                        }
+                        Location location = locationResult.getLocation();
+                        Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                        SaveUserLocation(location.toString());
+                        // UpdateLocation(location);
+                    }
+                });
 
-    /****************************************MENU*******************************************************/
+//        Awareness.SnapshotApi.getLocation(mApiClient)
+//                .setResultCallback(new ResultCallback<LocationResult>() {
+//                    @Override
+//                    public void onResult(@NonNull LocationResult locationResult) {
+//
+//                        if (locationResult.getStatus().isSuccess()) {
+//                            Location location = locationResult.getLocation();
+//                            UpdateLocation(location);
+//
+//                        }
+//                    }
+//                });
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        //return super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.action_buttons, menu);
-        return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        //return super.onOptionsItemSelected(item);
 
-        switch (item.getItemId()) {
-            case R.id.googleSetup:
-                // User chose the "google setup in FirebaseLogin" item, show the app settings UI...
-                Intent firebaseLogin = new Intent(this, FirebaseLogin.class);
-                startActivity(firebaseLogin);
-                return true;
+    /**************************** LOCATION IN FIREBASE *********************************/
 
-            case R.id.configureProfile:
-                // User chose the "configure profile, this page" action, mark the current item
-                // as a favorite...
-                Intent configure = new Intent(this, ConfigureProfile.class);
-                startActivity(configure);
-                return true;
 
-            default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item);
+    private void getUserLocations(DataSnapshot dataSnapshot)
+    {
+        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+            String UserID = getUser().getUid();
+            User user = new User();
+
+            if (ds.child(UserID).getValue(User.class) != null) {
+                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            }
+
+            if(user.getLocations() != null)
+            {
+                userLocations = user.getLocations();
+            }
         }
     }
 
+    private void SaveUserLocation(String newLocation)
+    {
+        ArrayList<String> locations = userLocations;
+        locations.add(newLocation);
 
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
 
-    public class FenceReceiver extends BroadcastReceiver {
-
-        private static final String TAG = "Fences API";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            FenceState fenceState = FenceState.extract(intent);
-
-            TextView textView = (TextView)findViewById(R.id.textViewHeadphones);
-            TextView textView1 = (TextView)findViewById(R.id.textViewActivity);
-
-            if (TextUtils.equals(fenceState.getFenceKey(), "headphoneFenceKey")) {
-                switch(fenceState.getCurrentState()) {
-                    case FenceState.TRUE:
-                        Log.i(TAG, "Headphones are plugged in.");
-                        textView.setText("Headphones are plugged in.");
-                        break;
-                    case FenceState.FALSE:
-                        Log.i(TAG, "Headphones are NOT plugged in.");
-                        textView.setText("Headphones are NOT plugged in.");
-                        break;
-                    case FenceState.UNKNOWN:
-                        Log.i(TAG, "The headphone fence is in an unknown state.");
-                        break;
-                }
+        if(currentUser != null) {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
+                mDatabase.push();
             }
-            else if(TextUtils.equals(fenceState.getFenceKey(), "orFenceKey")) {
-                switch(fenceState.getCurrentState()) {
-                    case FenceState.TRUE:
-                        textView1.setText("You are walking or heaphones are pluged.");
-                        break;
-                    case FenceState.FALSE:
-                        textView1.setText("You are not walking or headphoens are not plugged!");
-                        break;
-                }
-            }
-            else if(TextUtils.equals(fenceState.getFenceKey(), "activityFenceStarted")) {
-                switch(fenceState.getCurrentState()) {
-                    case FenceState.TRUE:
-                        textView1.setText("You started walikng.");
-                        break;
-                }
-            }
-            else if(TextUtils.equals(fenceState.getFenceKey(), "activityFenceStopped")) {
-                switch(fenceState.getCurrentState()) {
-                    case FenceState.TRUE:
-                        textView1.setText("You stopped walikng.");
-                        break;
-                }
-            }
-
-
         }
+    }
+
+    private FirebaseUser getUser() {
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        return currentUser;
     }
 }

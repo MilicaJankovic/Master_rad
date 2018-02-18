@@ -234,14 +234,11 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         RadioGroup groupAchivement = (RadioGroup) findViewById(R.id.radiogroupAchivement);
         RadioButton btnAchivement = (RadioButton) findViewById(groupAchivement.getCheckedRadioButtonId());
 
-//        ArrayList<String> locations = new ArrayList<String>();
-//        locations.add("12.34|11.45");
-//        locations.add("12:35|11.45");
 
-        ArrayList<String> locations = userLocations;
-        locations.add("13.45|11.46");
+//        ArrayList<String> locations = userLocations;
+//        locations.add("13.45|11.46");
 
-        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), locations);
+        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations);
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
 
