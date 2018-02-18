@@ -26,6 +26,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
+
 public class ConfigureProfile extends AppCompatActivity implements View.OnClickListener {
 
     //firebase
@@ -211,7 +213,9 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         RadioGroup groupAchivement = (RadioGroup) findViewById(R.id.radiogroupAchivement);
         RadioButton btnAchivement = (RadioButton) findViewById(groupAchivement.getCheckedRadioButtonId());
 
-        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString());
+        ArrayList<String> locations = new ArrayList<String>();
+        locations.add("");
+        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), locations);
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
 

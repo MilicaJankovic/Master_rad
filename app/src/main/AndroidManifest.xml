@@ -29,6 +29,36 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="com.google.android.awareness.API_KEY"
+            android:value="@string/google_play_services_key" />
+
+        <!-- places/location declaration -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_play_services_key" />
+
+        <!-- Beacon snapshots/fences declaration -->
+        <meta-data
+            android:name="com.google.android.nearby.messages.API_KEY"
+            android:value="@string/google_play_services_key" />
+
+        <service
+            android:name=".SensorService"
+            android:enabled="true" >
+        </service>
+
+        <receiver
+            android:name=".SensorRestarterBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="RestartServiceWhenStopped">
+            <intent-filter>
+                <action android:name="uk.ac.shef.oak.ActivityRecognition.RestartSensor"/>
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:parentActivityName=".FirebaseLogin">
@@ -37,6 +67,7 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".FirebaseLogin" />
+
         </activity>
         <activity
             android:name=".FirebaseLogin"
@@ -56,6 +87,7 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
+
         </activity>
 
         <service android:name=".ActivityRecognizedService" />
@@ -69,19 +101,7 @@
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
             android:value="@string/facebook_app_id" />
-        <meta-data
-            android:name="com.google.android.awareness.API_KEY"
-            android:value="@string/google_play_services_key" />
 
-        <!-- places/location declaration -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_play_services_key" />
-
-        <!-- Beacon snapshots/fences declaration -->
-        <meta-data
-            android:name="com.google.android.nearby.messages.API_KEY"
-            android:value="@string/google_play_services_key" />
 
         <!-- <activity -->
         <!-- android:name=".Login" -->

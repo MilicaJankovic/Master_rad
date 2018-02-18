@@ -1,11 +1,16 @@
 package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -16,12 +21,14 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
+import com.google.android.gms.awareness.snapshot.LocationResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
 import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.awareness.state.Weather;
@@ -50,6 +57,9 @@ import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -58,10 +68,15 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -83,6 +98,18 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
+
+
+    LocationRequest mLocationRequest;
+    LocationServices mLastLocation;
+
+    Context ctx;
+
+    public Context getCtx() {
+        return ctx;
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,13 +119,14 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
         }
 
-        mApiClient = new GoogleApiClient.Builder(this)
+        mApiClient = new GoogleApiClient.Builder(MainActivity.this)
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
                 .addApi(ActivityRecognition.API)
                 .addApi(Fitness.HISTORY_API)
                 .addApi(Awareness.API)
                 .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .enableAutoManage(this, 0, this)
@@ -164,12 +192,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         });
 
 
-
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        if(currentUser != null)
-        {
+        if (currentUser != null) {
 //            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
 //            if(analytics != null)
 //            {
@@ -178,14 +204,31 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //            }
 
             mDatabase = FirebaseDatabase.getInstance().getReference();
-            if(mDatabase != null)
-            {
+            if (mDatabase != null) {
                 //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
             }
         }
+
+
     }
 
+    private Location getLocationDetails(Context mContext) {
+        Location location = null;
+        if (mApiClient != null) {
+            if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG,"Location Permission Denied");
+                return null;
+            }else {
+                location = LocationServices.FusedLocationApi.getLastLocation(mApiClient);
+                if(location != null)
+                    Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                else
+                    Log.w(TAG,"Location is null");
 
+            }
+        }
+        return location;
+    }
 //    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
 //        User user = new User(name, email, gender, height, weight);
 //        mDatabase.child("users").child(userId).setValue(user);
@@ -257,7 +300,33 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 });
 
         detectWeather();
+        //GetAndStoreCurrentLocation();
 
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                GetAndStoreCurrentLocation();
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
+
+        // Create the LocationRequest object
+//        LocationRequest mLocationRequest = LocationRequest.create()
+//                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+//                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+//                .setFastestInterval(1 * 1000);
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//        final Context context = getApplicationContext();
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                getLocationDetails(MainActivity.this);
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
     }
 
 
@@ -417,6 +486,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -551,5 +621,107 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         b.putString("steps", textViewSteps.getText().toString());
         calendar.putExtras(b); //parameter to next Intent
         startActivity(calendar);
+    }
+
+    /***************************************STORE LOCATIONS************************************/
+    public void GetAndStoreCurrentLocation()
+    {
+        if (ContextCompat.checkSelfPermission(
+                MainActivity.this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    12345
+            );
+        }
+        Log.w("GetLocation", "Getting location started...");
+        Awareness.SnapshotApi.getLocation(mApiClient)
+                .setResultCallback(new ResultCallback<LocationResult>() {
+                    @Override
+                    public void onResult(@NonNull LocationResult locationResult) {
+                        if (!locationResult.getStatus().isSuccess()) {
+                            Log.w(TAG, "Could not get location.");
+                            return;
+                        }
+                        Location location = locationResult.getLocation();
+                        Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                       // UpdateLocation(location);
+                    }
+                });
+
+//        Awareness.SnapshotApi.getLocation(mApiClient)
+//                .setResultCallback(new ResultCallback<LocationResult>() {
+//                    @Override
+//                    public void onResult(@NonNull LocationResult locationResult) {
+//
+//                        if (locationResult.getStatus().isSuccess()) {
+//                            Location location = locationResult.getLocation();
+//                            UpdateLocation(location);
+//
+//                        }
+//                    }
+//                });
+
+    }
+
+    public void UpdateLocation(Location newLocation) {
+        final User[] users = {new User()};
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        if (mDatabase != null) {
+            mDatabase.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    users[0] = parseUserDetails(dataSnapshot);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                    // ...
+                }
+            });
+            mAuth = FirebaseAuth.getInstance();
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+
+            if (currentUser != null && users.length > 0) {
+                mDatabase = FirebaseDatabase.getInstance().getReference();
+                if (mDatabase != null) {
+                    ArrayList<String> newLocations = users[0].getLocations();
+                    newLocations.removeAll(Arrays.asList(null,""));
+                    newLocations.add(String.valueOf(newLocation.getLongitude()) + ";" + String.valueOf(newLocation.getLatitude()));
+                    User user = new User(users[0].getUsername(), users[0].getEmail(), users[0].getGender(), users[0].getHeigh(), users[0].getWeight(), users[0].getAchivement(), newLocations);
+                    mDatabase.child("users").child(currentUser.getUid()).setValue(user);
+                    mDatabase.push();
+                }
+            }
+        }
+    }
+    private User parseUserDetails(DataSnapshot dataSnapshot)
+    {
+        User user = new User();
+
+        for(DataSnapshot ds: dataSnapshot.getChildren() )
+        {
+            String UserID = getUser().getUid();
+
+            if(ds.child(UserID).getValue(User.class) != null) {
+                user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
+                //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
+                user.setGender(ds.child(UserID).getValue(User.class).getGender());
+                user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
+                user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
+                user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
+                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            }
+        }
+       return user;
+    }
+
+    private FirebaseUser getUser() {
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        return currentUser;
     }
 }
