@@ -1,27 +1,40 @@
 package com.example.petra.healthylifeapp;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Build;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
+import com.google.android.gms.awareness.snapshot.LocationResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
 import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.awareness.state.Weather;
@@ -50,6 +63,9 @@ import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -58,10 +74,15 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -83,6 +104,24 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
+
+    TextView tvLatitude, tvLongitude, tvTime;
+    LocationManager locationManager;
+    Location loc;
+    ArrayList<String> permissions = new ArrayList<>();
+    ArrayList<String> permissionsToRequest;
+    ArrayList<String> permissionsRejected = new ArrayList<>();
+    boolean isGPS = false;
+    boolean isNetwork = false;
+    boolean canGetLocation = true;
+
+    final String TAG = "GPS";
+    private final static int ALL_PERMISSIONS_RESULT = 101;
+    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
+    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,13 +131,14 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
         }
 
-        mApiClient = new GoogleApiClient.Builder(this)
+        mApiClient = new GoogleApiClient.Builder(MainActivity.this)
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
                 .addApi(ActivityRecognition.API)
                 .addApi(Fitness.HISTORY_API)
                 .addApi(Awareness.API)
                 .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .enableAutoManage(this, 0, this)
@@ -164,12 +204,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         });
 
 
-
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        if(currentUser != null)
-        {
+        if (currentUser != null) {
 //            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
 //            if(analytics != null)
 //            {
@@ -178,14 +216,238 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //            }
 
             mDatabase = FirebaseDatabase.getInstance().getReference();
-            if(mDatabase != null)
-            {
+            if (mDatabase != null) {
                 //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
             }
         }
+
+
+        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        isGPS = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        isNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+
+
+        if (!isGPS && !isNetwork) {
+            Log.d(TAG, "Connection off");
+            showSettingsAlert();
+            getLastLocation();
+        } else {
+            Log.d(TAG, "Connection on");
+            // check permissions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (permissionsToRequest.size() > 0) {
+                    requestPermissions(permissionsToRequest.toArray(new String[permissionsToRequest.size()]),
+                            ALL_PERMISSIONS_RESULT);
+                    Log.d(TAG, "Permission requests");
+                    canGetLocation = false;
+                }
+            }
+
+            // get location
+            getLocation();
+        }
+
+
+    }
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d(TAG, "onLocationChanged");
+        updateUI(location);
     }
 
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {}
 
+    @Override
+    public void onProviderEnabled(String s) {
+        getLocation();
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+        if (locationManager != null) {
+            locationManager.removeUpdates(this);
+        }
+    }
+
+    private void getLocation() {
+        try {
+            if (canGetLocation) {
+                Log.d(TAG, "Can get location");
+                if (isGPS) {
+                    // from GPS
+                    Log.d(TAG, "GPS on");
+                    locationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+
+                    if (locationManager != null) {
+                        loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        if (loc != null)
+                            updateUI(loc);
+                    }
+                } else if (isNetwork) {
+                    // from Network Provider
+                    Log.d(TAG, "NETWORK_PROVIDER on");
+                    locationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+
+                    if (locationManager != null) {
+                        loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        if (loc != null)
+                            updateUI(loc);
+                    }
+                } else {
+                    loc.setLatitude(0);
+                    loc.setLongitude(0);
+                    updateUI(loc);
+                }
+            } else {
+                Log.d(TAG, "Can't get location");
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getLastLocation() {
+        try {
+            Criteria criteria = new Criteria();
+            String provider = locationManager.getBestProvider(criteria, false);
+            Location location = locationManager.getLastKnownLocation(provider);
+            Log.d(TAG, provider);
+            Log.d(TAG, location == null ? "NO LastLocation" : location.toString());
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ArrayList findUnAskedPermissions(ArrayList<String> wanted) {
+        ArrayList result = new ArrayList();
+
+        for (String perm : wanted) {
+            if (!hasPermission(perm)) {
+                result.add(perm);
+            }
+        }
+
+        return result;
+    }
+
+    private boolean hasPermission(String permission) {
+        if (canAskPermission()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                return (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED);
+            }
+        }
+        return true;
+    }
+
+    private boolean canAskPermission() {
+        return (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1);
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case ALL_PERMISSIONS_RESULT:
+                Log.d(TAG, "onRequestPermissionsResult");
+                for (String perms : permissionsToRequest) {
+                    if (!hasPermission(perms)) {
+                        permissionsRejected.add(perms);
+                    }
+                }
+
+                if (permissionsRejected.size() > 0) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (shouldShowRequestPermissionRationale(permissionsRejected.get(0))) {
+                            showMessageOKCancel("These permissions are mandatory for the application. Please allow access.",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                                requestPermissions(permissionsRejected.toArray(
+                                                        new String[permissionsRejected.size()]), ALL_PERMISSIONS_RESULT);
+                                            }
+                                        }
+                                    });
+                            return;
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "No rejected permissions.");
+                    canGetLocation = true;
+                    getLocation();
+                }
+                break;
+        }
+    }
+
+    public void showSettingsAlert() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setTitle("GPS is not Enabled!");
+        alertDialog.setMessage("Do you want to turn on GPS?");
+        alertDialog.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        });
+
+        alertDialog.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        alertDialog.show();
+    }
+
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(SecondActivity.this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
+    }
+
+    private void updateUI(Location loc) {
+        Log.d(TAG, "updateUI");
+        tvLatitude.setText(Double.toString(loc.getLatitude()));
+        tvLongitude.setText(Double.toString(loc.getLongitude()));
+        tvTime.setText(DateFormat.getTimeInstance().format(loc.getTime()));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (locationManager != null) {
+            locationManager.removeUpdates(this);
+        }
+    }
+    private Location getLocationDetails(Context mContext) {
+        Location location = null;
+        if (mApiClient != null) {
+            if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Location Permission Denied");
+                return null;
+            } else {
+                location = LocationServices.FusedLocationApi.getLastLocation(mApiClient);
+                if (location != null)
+                    Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                else
+                    Log.w(TAG, "Location is null");
+
+            }
+        }
+        return location;
+    }
 //    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
 //        User user = new User(name, email, gender, height, weight);
 //        mDatabase.child("users").child(userId).setValue(user);
@@ -257,6 +519,33 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 });
 
         detectWeather();
+        //GetAndStoreCurrentLocation();
+
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                GetAndStoreCurrentLocation();
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
+
+        // Create the LocationRequest object
+//        LocationRequest mLocationRequest = LocationRequest.create()
+//                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+//                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+//                .setFastestInterval(1 * 1000);
+//        final Handler handler = new Handler();
+//        final int delay = 60000; //milliseconds
+//        final Context context = getApplicationContext();
+//
+//        handler.postDelayed(new Runnable(){
+//            public void run(){
+//                getLocationDetails(MainActivity.this);
+//                handler.postDelayed(this, delay);
+//            }
+//        }, delay);
 
     }
 
@@ -417,6 +706,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -551,5 +841,107 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         b.putString("steps", textViewSteps.getText().toString());
         calendar.putExtras(b); //parameter to next Intent
         startActivity(calendar);
+    }
+
+    /***************************************STORE LOCATIONS************************************/
+    public void GetAndStoreCurrentLocation()
+    {
+        if (ContextCompat.checkSelfPermission(
+                MainActivity.this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    MainActivity.this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    12345
+            );
+        }
+        Log.w("GetLocation", "Getting location started...");
+        Awareness.SnapshotApi.getLocation(mApiClient)
+                .setResultCallback(new ResultCallback<LocationResult>() {
+                    @Override
+                    public void onResult(@NonNull LocationResult locationResult) {
+                        if (!locationResult.getStatus().isSuccess()) {
+                            Log.w(TAG, "Could not get location.");
+                            return;
+                        }
+                        Location location = locationResult.getLocation();
+                        Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
+                       // UpdateLocation(location);
+                    }
+                });
+
+//        Awareness.SnapshotApi.getLocation(mApiClient)
+//                .setResultCallback(new ResultCallback<LocationResult>() {
+//                    @Override
+//                    public void onResult(@NonNull LocationResult locationResult) {
+//
+//                        if (locationResult.getStatus().isSuccess()) {
+//                            Location location = locationResult.getLocation();
+//                            UpdateLocation(location);
+//
+//                        }
+//                    }
+//                });
+
+    }
+
+    public void UpdateLocation(Location newLocation) {
+        final User[] users = {new User()};
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        if (mDatabase != null) {
+            mDatabase.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    users[0] = parseUserDetails(dataSnapshot);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                    // ...
+                }
+            });
+            mAuth = FirebaseAuth.getInstance();
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+
+            if (currentUser != null && users.length > 0) {
+                mDatabase = FirebaseDatabase.getInstance().getReference();
+                if (mDatabase != null) {
+                    ArrayList<String> newLocations = users[0].getLocations();
+                    newLocations.removeAll(Arrays.asList(null,""));
+                    newLocations.add(String.valueOf(newLocation.getLongitude()) + ";" + String.valueOf(newLocation.getLatitude()));
+                    User user = new User(users[0].getUsername(), users[0].getEmail(), users[0].getGender(), users[0].getHeigh(), users[0].getWeight(), users[0].getAchivement(), newLocations);
+                    mDatabase.child("users").child(currentUser.getUid()).setValue(user);
+                    mDatabase.push();
+                }
+            }
+        }
+    }
+    private User parseUserDetails(DataSnapshot dataSnapshot)
+    {
+        User user = new User();
+
+        for(DataSnapshot ds: dataSnapshot.getChildren() )
+        {
+            String UserID = getUser().getUid();
+
+            if(ds.child(UserID).getValue(User.class) != null) {
+                user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
+                //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
+                user.setGender(ds.child(UserID).getValue(User.class).getGender());
+                user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
+                user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
+                user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
+                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            }
+        }
+       return user;
+    }
+
+    private FirebaseUser getUser() {
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        return currentUser;
     }
 }
