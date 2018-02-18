@@ -26,6 +26,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class ConfigureProfile extends AppCompatActivity implements View.OnClickListener {
@@ -33,6 +34,8 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
+
+    private ArrayList<String> userLocations;
 
 
     @Override
@@ -67,6 +70,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         parseUserDetails(dataSnapshot);
+                        getUserLocations(dataSnapshot);
                     }
 
                     @Override
@@ -75,6 +79,23 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
                         // ...
                     }
                 });
+            }
+        }
+    }
+
+    private void getUserLocations(DataSnapshot dataSnapshot)
+    {
+        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+            String UserID = getUser().getUid();
+            User user = new User();
+
+            if (ds.child(UserID).getValue(User.class) != null) {
+                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            }
+
+            if(user.getLocations() != null)
+            {
+                userLocations = user.getLocations();
             }
         }
     }
@@ -213,8 +234,13 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         RadioGroup groupAchivement = (RadioGroup) findViewById(R.id.radiogroupAchivement);
         RadioButton btnAchivement = (RadioButton) findViewById(groupAchivement.getCheckedRadioButtonId());
 
-        ArrayList<String> locations = new ArrayList<String>();
-        locations.add("");
+//        ArrayList<String> locations = new ArrayList<String>();
+//        locations.add("12.34|11.45");
+//        locations.add("12:35|11.45");
+
+        ArrayList<String> locations = userLocations;
+        locations.add("13.45|11.46");
+
         User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), locations);
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
