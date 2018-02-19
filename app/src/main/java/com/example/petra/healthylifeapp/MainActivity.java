@@ -103,13 +103,13 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     LocationRequest mLocationRequest;
     LocationServices mLastLocation;
 
+    Intent mServiceIntent;
+    private SensorService mSensorService;
     Context ctx;
-
     public Context getCtx() {
         return ctx;
     }
-
-
+    public static MainActivity instance;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -351,8 +351,28 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //                handler.postDelayed(this, delay);
 //            }
 //        }, delay);
+        /*************SERVIS PREGLUPI********/
+        instance = this;
+        ctx = this;
+        instance = this;
+        setContentView(R.layout.activity_main);
+        mSensorService = new SensorService(getCtx());
+        mServiceIntent = new Intent(getCtx(), mSensorService.getClass());
+        if (!isMyServiceRunning(mSensorService.getClass())) {
+            startService(mServiceIntent);
+        }
     }
-
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
+    }
 
     private void detectWeather() {
         if (!checkLocationPermission()) {
@@ -671,7 +691,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                         }
                         Location location = locationResult.getLocation();
                         Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
-                        SaveUserLocation(location.toString());
+                       // SaveUserLocation(location.toString());
                         // UpdateLocation(location);
                     }
                 });

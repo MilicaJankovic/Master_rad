@@ -51,7 +51,7 @@ public class SensorService extends Service {
         initializeTimerTask();
 
         //schedule the timer, to wake up every 1 second
-        timer.schedule(timerTask, 1000, 1000); //
+        timer.schedule(timerTask, 5000, 5000); //
     }
 
     /**
@@ -61,6 +61,11 @@ public class SensorService extends Service {
         timerTask = new TimerTask() {
             public void run() {
                 Log.i("in timer", "in timer ++++  "+ (counter++));
+                MainActivity activity = MainActivity.instance;
+                if (activity != null) {
+                    // we are calling here activity's method
+                    activity.GetAndStoreCurrentLocation();
+                }
 
             }
         };
