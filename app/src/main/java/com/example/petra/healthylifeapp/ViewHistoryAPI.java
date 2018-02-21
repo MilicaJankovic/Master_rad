@@ -649,6 +649,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
                     .tilt(40)                   // Sets the tilt of the camera to 30 degrees
                     .build();                   // Creates a CameraPosition from the builder
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
         }
     }
 
