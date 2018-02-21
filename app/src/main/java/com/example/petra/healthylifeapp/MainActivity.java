@@ -1,6 +1,7 @@
 package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,12 +10,15 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -102,6 +106,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
+    public FenceReceiver receiver;
+
 
     // Declare variables for pending intent and fence receiver.
     private PendingIntent myPendingIntent;
@@ -114,11 +120,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
         //pending intent for headphones FENCES api
         Intent intent1 = new Intent(FENCE_RECEIVER_ACTION);
-        myPendingIntent = PendingIntent.getBroadcast(this, 0, intent1, 0);
-        FenceReceiver receiver = new FenceReceiver();
+        myPendingIntent = PendingIntent.getBroadcast(this, 1, intent1, PendingIntent.FLAG_UPDATE_CURRENT);
+        alarmManager.set(AlarmManager.RTC_WAKEUP, 1000, myPendingIntent);
+
+
+        receiver = new FenceReceiver();
         registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+
 
 
         if(currentUser != null) {
@@ -219,9 +230,18 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-//        Intent intent = new Intent(this, ActivityRecognizedService.class);
+        Intent intent = new Intent(this, ActivityRecognizedService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 3000, pendingIntent);
+
+
+//        Intent intent = new Intent(this, BackgroundService.class);
 //        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-//        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 3000, pendingIntent);
+//        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 1000, pendingIntent);
+
+
+//        Intent intent = new Intent(this, BackgroundService.class);
+//        startService(intent);
 
         DataSourcesRequest dataSourceRequest = new DataSourcesRequest.Builder()
                 .setDataTypes(DataType.TYPE_STEP_COUNT_CUMULATIVE)
@@ -285,9 +305,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         //AwarenessFence startedFence = DetectedActivityFence.starting(DetectedActivity.WALKING);
 //        AwarenessFence endedFence = DetectedActivityFence.stopping(DetectedActivity.WALKING);
 
-        AwarenessFence orFence = AwarenessFence.or(headphoneFence, activityFence);
+        //AwarenessFence orFence = AwarenessFence.or(headphoneFence, activityFence);
 
-        createFence("orFenceKey", orFence);
+        //removefence("orFenceKey");
+        createFence("headphoneFenceKey", headphoneFence);
     }
 
 
@@ -494,8 +515,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     @Override
     protected void onStop() {
-        super.onStop();
+        try {
+            if (receiver != null) {
+                this.unregisterReceiver(receiver);
+            }
+        } catch (Exception e) {
+            Log.i("", "broadcastReceiver is already unregistered");
+            receiver = null;
+        }
 
+        super.onStop();
     }
 
     @Override
@@ -673,6 +702,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         public void onReceive(Context context, Intent intent) {
             FenceState fenceState = FenceState.extract(intent);
 
+//            Intent background = new Intent(context, BackgroundService.class);
+//            context.startService(background);
+
+
             TextView textView = (TextView)findViewById(R.id.textViewHeadphones);
             TextView textView1 = (TextView)findViewById(R.id.textViewActivity);
 
@@ -681,6 +714,11 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                     case FenceState.TRUE:
                         Log.i(TAG, "Headphones are plugged in.");
                         textView.setText("Headphones are plugged in.");
+                        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+                        builder.setContentText( "Headphones are plugged in." );
+                        builder.setSmallIcon( R.mipmap.ic_launcher );
+                        builder.setContentTitle( getString( R.string.app_name ) );
+                        NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
                         break;
                     case FenceState.FALSE:
                         Log.i(TAG, "Headphones are NOT plugged in.");

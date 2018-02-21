@@ -17,6 +17,10 @@ import java.util.List;
 
 public class ActivityRecognizedService extends IntentService {
 
+    //public boolean StillFlag = true;
+    public static int TimeStill = 0;
+    public static int TimeWalking = 0;
+
     public ActivityRecognizedService() {
         super("ActivityRecognizedService");
     }
@@ -32,47 +36,71 @@ public class ActivityRecognizedService extends IntentService {
             handleDetectedActivities( result.getProbableActivities() );
         }
     }
+    
 
     private void handleDetectedActivities(List<DetectedActivity> probableActivities) {
         for( DetectedActivity activity : probableActivities ) {
             switch( activity.getType() ) {
                 case DetectedActivity.IN_VEHICLE: {
-                    Log.e( "ActivityRecogition", "In Vehicle: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "In Vehicle: " + activity.getConfidence() );
                     break;
                 }
                 case DetectedActivity.ON_BICYCLE: {
-                    Log.e( "ActivityRecogition", "On Bicycle: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "On Bicycle: " + activity.getConfidence() );
                     break;
                 }
                 case DetectedActivity.ON_FOOT: {
-                    Log.e( "ActivityRecogition", "On Foot: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "On Foot: " + activity.getConfidence() );
                     break;
                 }
                 case DetectedActivity.RUNNING: {
-                    Log.e( "ActivityRecogition", "Running: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "Running: " + activity.getConfidence() );
                     break;
                 }
                 case DetectedActivity.STILL: {
-                    Log.e( "ActivityRecogition", "Still: " + activity.getConfidence() );
-                    break;
-                }
-                case DetectedActivity.TILTING: {
-                    Log.e( "ActivityRecogition", "Tilting: " + activity.getConfidence() );
-                    break;
-                }
-                case DetectedActivity.WALKING: {
-                    Log.e( "ActivityRecogition", "Walking: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "Still: " + activity.getConfidence() );
+
                     if( activity.getConfidence() >= 75 ) {
-                        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-                        builder.setContentText( "Are you walking?" );
+                        TimeStill++;
+                        Log.e( "TimeStill", "Time: " + TimeStill );
+                    }
+
+                    if(TimeStill >= 12)
+                    { NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+                        builder.setContentText( "You are sitting for too long!" );
                         builder.setSmallIcon( R.mipmap.ic_launcher );
                         builder.setContentTitle( getString( R.string.app_name ) );
                         NotificationManagerCompat.from(this).notify(0, builder.build());
+
+                        TimeStill = 0;
+                    }
+                    break;
+                }
+                case DetectedActivity.TILTING: {
+                    Log.e( "ActivityRecognition", "Tilting: " + activity.getConfidence() );
+                    break;
+                }
+                case DetectedActivity.WALKING: {
+                    Log.e( "ActivityRecognition", "Walking: " + activity.getConfidence() );
+                    if( activity.getConfidence() >= 75 ) {
+                        TimeWalking++;
+                        TimeStill = 0;
+                    }
+
+                    if(TimeWalking >= 12*60)
+                    {
+                        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+                        builder.setContentText( "You are walking for so long! Well done!" );
+                        builder.setSmallIcon( R.mipmap.ic_launcher );
+                        builder.setContentTitle( getString( R.string.app_name ) );
+                        NotificationManagerCompat.from(this).notify(0, builder.build());
+
+                        TimeWalking = 0;
                     }
                     break;
                 }
                 case DetectedActivity.UNKNOWN: {
-                    Log.e( "ActivityRecogition", "Unknown: " + activity.getConfidence() );
+                    Log.e( "ActivityRecognition", "Unknown: " + activity.getConfidence() );
                     break;
                 }
             }
