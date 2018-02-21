@@ -226,6 +226,14 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     protected void onStart() {
         super.onStart();
         mApiClient.connect();
+        Intent intent = new Intent(this, BackgroundService.class);
+        startService(intent);
+
+        Intent intentActivity = new Intent(this, ActivityRecognizedService.class);
+        startService(intentActivity);
+//        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+//        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 1000, pendingIntent);
+
     }
 
     @Override
@@ -235,10 +243,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 3000, pendingIntent);
 
 
-//        Intent intent = new Intent(this, BackgroundService.class);
-//        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-//        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mApiClient, 1000, pendingIntent);
-
+//
 
 //        Intent intent = new Intent(this, BackgroundService.class);
 //        startService(intent);

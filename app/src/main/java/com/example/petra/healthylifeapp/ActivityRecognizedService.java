@@ -28,7 +28,11 @@ public class ActivityRecognizedService extends IntentService {
     public ActivityRecognizedService(String name) {
         super(name);
     }
-
+    @Override
+    public int onStartCommand(final Intent intent, int flags, int startId) {
+        //other code
+        return START_STICKY;
+    }
     @Override
     protected void onHandleIntent(Intent intent) {
         if(ActivityRecognitionResult.hasResult(intent)) {
@@ -65,7 +69,7 @@ public class ActivityRecognizedService extends IntentService {
                         Log.e( "TimeStill", "Time: " + TimeStill );
                     }
 
-                    if(TimeStill >= 12)
+                    if(TimeStill >= 0)
                     { NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
                         builder.setContentText( "You are sitting for too long!" );
                         builder.setSmallIcon( R.mipmap.ic_launcher );

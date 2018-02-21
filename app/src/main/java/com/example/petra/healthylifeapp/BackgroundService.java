@@ -84,7 +84,11 @@ public class BackgroundService extends IntentService implements GoogleApiClient.
 
     }
 
-
+    @Override
+    public int onStartCommand(final Intent intent, int flags, int startId) {
+        //other code
+        return START_STICKY;
+    }
     private void createFence(final String fenceKey, AwarenessFence fence){
         // Register the fence to receive callbacks.
         // The fence key uniquely identifies the fence.
