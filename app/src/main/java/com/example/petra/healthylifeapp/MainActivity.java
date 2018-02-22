@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -94,6 +95,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
 
+
+    public static final String FENCE_RECEIVER_ACTION =
+            "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
+
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
@@ -119,6 +124,18 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
         }
 
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+
+        BackgroundService service = new BackgroundService();
+        BackgroundService.FenceReceiver receiver = service.new FenceReceiver();
+//        BackgroundService.FenceReceiver receiver = new BackgroundService.FenceReceiver();
+        registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+
+        if (currentUser != null) {
+
         mApiClient = new GoogleApiClient.Builder(MainActivity.this)
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
@@ -132,7 +149,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 .enableAutoManage(this, 0, this)
                 .build();
         mApiClient.connect();
-        initCallbacks();
 
         /**********************STEPS**************************/
         FitnessOptions fitnessOptions =
@@ -190,18 +206,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 OpenCalenadrActivity(view);
             }
         });
-
-
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if (currentUser != null) {
-//            FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
-//            if(analytics != null)
-//            {
-//                analytics.setUserProperty("Gender", "female");
-//                analytics.setUserProperty("Height", "167");
-//            }
 
             mDatabase = FirebaseDatabase.getInstance().getReference();
             if (mDatabase != null) {
@@ -263,6 +267,12 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     protected void onStart() {
         super.onStart();
         mApiClient.connect();
+
+        Intent intent = new Intent(this, BackgroundService.class);
+        startService(intent);
+
+//        Intent intentActivity = new Intent(this, ActivityRecognizedService.class);
+//        startService(intentActivity);
     }
 
     @Override
@@ -543,45 +553,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         outState.putBoolean(AUTH_PENDING, authInProgress);
     }
 
-    private void initCallbacks() {
-//        mSubscribeResultCallback = new ResultCallback<Status>() {
-//            @Override
-//            public void onResult(@NonNull Status status) {
-//                if (status.isSuccess()) {
-//                    if (status.getStatusCode() == FitnessStatusCodes.SUCCESS_ALREADY_SUBSCRIBED) {
-//                        Log.e("RecordingAPI", "Already subscribed to the Recording API");
-//                    } else {
-//                        Log.e("RecordingAPI", "Subscribed to the Recording API");
-//                    }
-//                }
-//            }
-//        };
-//
-//        mCancelSubscriptionResultCallback = new ResultCallback<Status>() {
-//            @Override
-//            public void onResult(@NonNull Status status) {
-//                if (status.isSuccess()) {
-//                    Log.e("RecordingAPI", "Canceled subscriptions!");
-//                } else {
-//                    // Subscription not removed
-//                    Log.e("RecordingAPI", "Failed to cancel subscriptions");
-//                }
-//            }
-//        };
-//
-//        mListSubscriptionsResultCallback = new ResultCallback<ListSubscriptionsResult>() {
-//            @Override
-//            public void onResult(@NonNull ListSubscriptionsResult listSubscriptionsResult) {
-//                for (Subscription subscription : listSubscriptionsResult.getSubscriptions()) {
-//                    DataType dataType = subscription.getDataType();
-//                    Log.e("RecordingAPI", dataType.getName());
-//                    for (Field field : dataType.getFields()) {
-//                        Log.e("RecordingAPI", field.toString());
-//                    }
-//                }
-//            }
-//        };
-    }
 
     /**************************STEPS METHODS*************************/
 
