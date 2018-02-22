@@ -1,9 +1,13 @@
 package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -56,9 +60,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -71,6 +77,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -102,6 +109,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     private GoogleMap mMap;
 
     static List<DataSet> dataSetsBucket;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -146,8 +154,15 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        coordi.add("43.325062;21.907176");
+        coordi.add("43.320921;21.915745");
+        coordi.add("43.319050;21.922033");
+        coordi.add("43.317943;21.924704");
+        coordi.add("43.315675;21.926957");
     }
-        protected synchronized void buildGoogleApiClient() {
+
+    protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -155,14 +170,14 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
                 .build();
         mGoogleApiClient.connect();
 
+
     }
 
 
-    private void setData(int count)
-    {
+    private void setData(int count) {
         ArrayList<BarEntry> yVals = new ArrayList<>();
 
-        for(int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             yVals.add(new BarEntry(i, lastWeekSteps.get(i)));
         }
 
@@ -207,7 +222,12 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
         }
 
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+        DrawLine();
+
+        ZoomMap();
     }
+
     public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
@@ -386,7 +406,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
      * better option would be to dump the data you receive to a local data directory to avoid exposing
      * it to other applications.
      */
-    public  void printData(DataReadResponse dataReadResult) {
+    public void printData(DataReadResponse dataReadResult) {
         // [START parse_read_data_result]
         // If the DataReadRequest object specified aggregated data, dataReadResult will be returned
         // as buckets containing DataSets, instead of just DataSets.
@@ -411,7 +431,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     }
 
     // [START parse_dataset]
-    private  void dumpDataSet(DataSet dataSet) {
+    private void dumpDataSet(DataSet dataSet) {
         Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
         DateFormat dateFormat = DateFormat.getDateInstance();
         DateFormat timeFormat = DateFormat.getTimeInstance();
@@ -424,7 +444,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
             for (Field field : dp.getDataType().getFields()) {
 
                 Log.i(TAG, "\tField: " + field.getName() + " Value: " + dp.getValue(field));
-               // UpdateHistoryTextView(String.valueOf(dp.getValue(field)), dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+                // UpdateHistoryTextView(String.valueOf(dp.getValue(field)), dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
                 lastWeekSteps.add(dp.getValue(field).asInt());
             }
         }
@@ -432,8 +452,8 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 
     }
 
-    public  void UpdateHistoryTextView(String steps, String endDate) {
-    //    TextView textViewSteps = (TextView) findViewById(R.id.history_text_view);
+    public void UpdateHistoryTextView(String steps, String endDate) {
+        //    TextView textViewSteps = (TextView) findViewById(R.id.history_text_view);
 
 
 //                    SimpleDateFormat inFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -447,11 +467,10 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 //                    SimpleDateFormat outFormat = new SimpleDateFormat("EEEE");
 //                    String goal = outFormat.format(date);
 
-     //   textViewSteps.setText(textViewSteps.getText() + "\n" + endDate + " " + steps);
+        //   textViewSteps.setText(textViewSteps.getText() + "\n" + endDate + " " + steps);
 
 
-
-}
+    }
 
     // [END parse_dataset]
 
@@ -607,5 +626,66 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+    private ArrayList<String> coordi = new ArrayList<>();
+
+    private void ZoomMap() {
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+        if (location != null)
+        {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
+                    .zoom(14)                   // Sets the zoom
+                    .bearing(90)                // Sets the orientation of the camera to east
+                    .tilt(40)                   // Sets the tilt of the camera to 30 degrees
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+        }
+    }
+
+    protected void DrawLine() {
+        ArrayList<LatLng> points;
+        PolylineOptions lineOptions = null;
+        points = new ArrayList<>();
+        lineOptions = new PolylineOptions();
+        // Traversing through all the routes
+        for (int i = 0; i < coordi.size(); i++) {
+
+
+
+                String[] LonLat = coordi.get(i).split(";");
+                double lat = Double.parseDouble(LonLat[0]);
+                double lng = Double.parseDouble(LonLat[1]);
+                LatLng position = new LatLng(lat, lng);
+
+                points.add(position);
+
+
+
+        }
+
+        // Adding all the points in the route to LineOptions
+        lineOptions.addAll(points);
+        lineOptions.width(10);
+        lineOptions.color(Color.RED);
+
+        Log.d("DrawLines","DrawLines lineoptions decoded");
+        // Drawing polyline in the Google Map for the i-th route
+        if(lineOptions != null) {
+            mMap.addPolyline(lineOptions);
+        }
+        else {
+            Log.d("DrawLines","without Polylines drawn");
+        }
     }
 }
