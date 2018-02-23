@@ -28,13 +28,34 @@ import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     public int counter=0;
     public GoogleApiClient mApiClient;
+
+    //firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
+
+
+    private ArrayList<String> userLocations;
+
+    private String PreviousLat = "";
+    private String PreviousLon = "";
+
+
     public static final String TAG = "StepCounter";
     public SensorService(Context applicationContext) {
         super();
@@ -45,22 +66,52 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        if(mDatabase != null) {
+            mDatabase.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    getUserLocations(dataSnapshot);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                    // ...
+                }
+            });
+        }
+
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        //startTimer();
-        mApiClient = new GoogleApiClient.Builder(SensorService.this)
-                .addApi(Fitness.SENSORS_API)
-                .addApi(Fitness.RECORDING_API)
-                .addApi(ActivityRecognition.API)
-                .addApi(Fitness.HISTORY_API)
-                .addApi(Awareness.API)
-                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
-                .addApi(LocationServices.API)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-               // .enableAutoManage(this, 0, this)
-                .build();
-        mApiClient.connect();
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+
+        if(currentUser != null) {
+            //startTimer();
+            mApiClient = new GoogleApiClient.Builder(SensorService.this)
+                    .addApi(Fitness.SENSORS_API)
+                    .addApi(Fitness.RECORDING_API)
+                    .addApi(ActivityRecognition.API)
+                    .addApi(Fitness.HISTORY_API)
+                    .addApi(Awareness.API)
+                    .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                    .addApi(LocationServices.API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    // .enableAutoManage(this, 0, this)
+                    .build();
+            mApiClient.connect();
+        }
+
         return START_STICKY;
     }
 
@@ -84,7 +135,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         initializeTimerTask();
 
         //schedule the timer, to wake up every 1 second
-        timer.schedule(timerTask, 5000, 5000); //
+        //every 60 seconds
+        timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(5), TimeUnit.MINUTES.toMillis(5)); //
     }
 
     /**
@@ -136,6 +188,16 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
                         // SaveUserLocation(location.toString());
                         // UpdateLocation(location);
+
+                        //save location in database only if it's different from previous
+                        String lat = String.format("%.3f", location.getLatitude());
+                        String lon = String.format("%.3f", location.getLongitude());
+
+                        if(!lat.equals(PreviousLat) || !lon.equals(PreviousLon)) {
+                            SaveUserLocation(location.getLatitude() + "|" + location.getLongitude());
+                            PreviousLat = String.format("%.3f", location.getLatitude());
+                            PreviousLon = String.format("%.3f", location.getLongitude());
+                        }
                     }
                 });
 
@@ -167,5 +229,53 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+
+    private void getUserLocations(DataSnapshot dataSnapshot)
+    {
+        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+            String UserID = getUser().getUid();
+            User user = new User();
+
+            if (ds.child(UserID).getValue(User.class) != null) {
+                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            }
+
+            if(user.getLocations() != null)
+            {
+                userLocations = user.getLocations();
+            }
+        }
+    }
+
+    private void SaveUserLocation(String newLocation)
+    {
+        ArrayList<String> locations;
+        if(userLocations != null) {
+            locations = userLocations;
+        }
+        else{
+            locations = new ArrayList<String>();
+        }
+
+        locations.add(newLocation);
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if(currentUser != null) {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
+                mDatabase.push();
+            }
+        }
+    }
+
+    private FirebaseUser getUser() {
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        return currentUser;
     }
 }

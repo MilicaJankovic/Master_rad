@@ -95,6 +95,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
 
+//    private static String PreviousLocation = "";
+
 
     public static final String FENCE_RECEIVER_ACTION =
             "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
@@ -226,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        getUserLocations(dataSnapshot);
+                        //getUserLocations(dataSnapshot);
                     }
 
                     @Override
@@ -257,11 +259,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
         return location;
     }
-//    private void writeNewUser(String userId, String name, String email, String gender, Double height, Double weight) {
-//        User user = new User(name, email, gender, height, weight);
-//        mDatabase.child("users").child(userId).setValue(user);
-//        mDatabase.push();
-//    }
 
     @Override
     protected void onStart() {
@@ -273,6 +270,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
 //        Intent intentActivity = new Intent(this, ActivityRecognizedService.class);
 //        startService(intentActivity);
+
+//        SaveUserLocation("45.32;12.23");
+//        SaveUserLocation("45:33;12:34");
     }
 
     @Override
@@ -309,30 +309,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             Log.i("mApiClient", "Google_Api_Client: It was NOT connected on (onConnected) function, It is definetly bugged.");
         }
 
-
-        //check if the headphones are connected
-        Awareness.SnapshotApi.getHeadphoneState(mApiClient)
-                .setResultCallback(new ResultCallback<HeadphoneStateResult>() {
-                    @Override
-                    public void onResult(@NonNull HeadphoneStateResult headphoneStateResult) {
-                        if (headphoneStateResult.getStatus().isSuccess()) {
-                            HeadphoneState headphoneState =
-                                    headphoneStateResult.getHeadphoneState();
-                            int state = headphoneState.getState();
-
-                            TextView textViewHeadphones = (TextView) findViewById(R.id.textViewHeadphones);
-
-                            if (state == HeadphoneState.PLUGGED_IN) {
-                                // Headphones plugged in
-                                textViewHeadphones.setText("Headphones plugged in...");
-                            } else if (state == HeadphoneState.UNPLUGGED) {
-                                // Headphones unplugged
-                                textViewHeadphones.setText("Headphones unplugged...");
-                            }
-                        }
-                    }
-                });
-
         detectWeather();
         //GetAndStoreCurrentLocation();
 
@@ -362,12 +338,12 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //            }
 //        }, delay);
         /*************SERVIS PREGLUPI********/
-        instance = this;
-        ctx = this;
-        instance = this;
+//        instance = this;
+//        ctx = this;
         setContentView(R.layout.activity_main);
-        mSensorService = new SensorService(getCtx());
-        mServiceIntent = new Intent(getCtx(), mSensorService.getClass());
+
+        mSensorService = new SensorService(getApplicationContext());
+        mServiceIntent = new Intent(getApplicationContext(), mSensorService.getClass());
         if (!isMyServiceRunning(mSensorService.getClass())) {
             startService(mServiceIntent);
         }
@@ -394,10 +370,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                     @Override
                     public void onResult(@NonNull WeatherResult weatherResult) {
                         Weather weather = weatherResult.getWeather();
-//                        Log.e("Tuts+", "Temp: " + weather.getTemperature(Weather.FAHRENHEIT));
-//                        Log.e("Tuts+", "Feels like: " + weather.getFeelsLikeTemperature(Weather.FAHRENHEIT));
-//                        Log.e("Tuts+", "Dew point: " + weather.getDewPoint(Weather.FAHRENHEIT));
-//                        Log.e("Tuts+", "Humidity: " + weather.getHumidity() );
 
                         if(weather != null) {
                             TextView txtWeather = (TextView) findViewById(R.id.txtWeather);
@@ -662,8 +634,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                         }
                         Location location = locationResult.getLocation();
                         Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
-                       // SaveUserLocation(location.toString());
-                        // UpdateLocation(location);
+
+                        //save location in database only if it's different from previous
+//                        String lat = String.format("%.3f", location.getLatitude());
+//                        String lon = String.format("%.3f", location.getLongitude());
+
+//                        if(location.toString() != PreviousLocation) {
+//                            SaveUserLocation(location.toString());
+//                            PreviousLocation = location.toString();
+//                            // UpdateLocation(location);
+//                        }
                     }
                 });
 
@@ -686,26 +666,33 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     /**************************** LOCATION IN FIREBASE *********************************/
 
 
-    private void getUserLocations(DataSnapshot dataSnapshot)
-    {
-        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
-            String UserID = getUser().getUid();
-            User user = new User();
-
-            if (ds.child(UserID).getValue(User.class) != null) {
-                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
-            }
-
-            if(user.getLocations() != null)
-            {
-                userLocations = user.getLocations();
-            }
-        }
-    }
+//    private void getUserLocations(DataSnapshot dataSnapshot)
+//    {
+//        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+//            String UserID = getUser().getUid();
+//            User user = new User();
+//
+//            if (ds.child(UserID).getValue(User.class) != null) {
+//                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+//            }
+//
+//            if(user.getLocations() != null)
+//            {
+//                userLocations = user.getLocations();
+//            }
+//        }
+//    }
 
     private void SaveUserLocation(String newLocation)
     {
-        ArrayList<String> locations = userLocations;
+        ArrayList<String> locations;
+        if(userLocations != null) {
+            locations = userLocations;
+        }
+        else{
+            locations = new ArrayList<String>();
+        }
+
         locations.add(newLocation);
 
         mAuth = FirebaseAuth.getInstance();
