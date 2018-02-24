@@ -36,7 +36,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -236,16 +240,32 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     {
         for(DataSnapshot ds: dataSnapshot.getChildren() ) {
             String UserID = getUser().getUid();
-            User user = new User();
+//            User user = new User();
+//
+//            if (ds.child(UserID).getValue(User.class) != null) {
+//                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+//            }
+//
+//            if(user.getLocations() != null)
+//            {
+//                userLocations = user.getLocations();
+//            }
 
-            if (ds.child(UserID).getValue(User.class) != null) {
-                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
+            HashMap<String, Object> user = null;
+            if (ds.child(UserID).getValue() != null) {
+                user = (HashMap<String, Object>)ds.child(UserID).getValue();
             }
 
-            if(user.getLocations() != null)
-            {
-                userLocations = user.getLocations();
+            if(user.get("locations") != null) {
+                //String lala = user.get("locations").toString();
+                Map<String, String> locations = new HashMap<>();
+                for (String key : locations.keySet()) {
+                    String value = locations.get(key);
+                    System.out.println("Key = " + key + ", Value = " + value);
+                    userLocations.add(value);
+                }
             }
+
         }
     }
 
