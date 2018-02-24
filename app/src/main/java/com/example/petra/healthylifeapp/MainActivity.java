@@ -2,16 +2,11 @@ package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationManager;
-import android.os.Handler;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -19,19 +14,13 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.RadioButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
-import com.google.android.gms.awareness.snapshot.HeadphoneStateResult;
-import com.google.android.gms.awareness.snapshot.LocationResult;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
-import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
@@ -41,32 +30,23 @@ import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.FitnessOptions;
-import com.google.android.gms.fitness.FitnessStatusCodes;
-import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataSource;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
-import com.google.android.gms.fitness.data.Subscription;
-import com.google.android.gms.fitness.data.Value;
-import com.google.android.gms.fitness.request.DataReadRequest;
 import com.google.android.gms.fitness.request.DataSourcesRequest;
 import com.google.android.gms.fitness.request.OnDataPointListener;
 import com.google.android.gms.fitness.request.SensorRequest;
-import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataSourcesResult;
 import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -75,48 +55,40 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     public static final String TAG = "StepCounter";
+    public static final String FENCE_RECEIVER_ACTION =
+            "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
     private static final int REQUEST_OAUTH = 1;
     private static final String AUTH_PENDING = "auth_state_pending";
     private static final int REQUEST_OAUTH_REQUEST_CODE = 0x1001;
+    private final static int REQUEST_PERMISSION_RESULT_CODE = 42;
+    public static MainActivity instance;
     public GoogleApiClient mApiClient;
+    LocationRequest mLocationRequest;
+
+//    private static String PreviousLocation = "";
+    LocationServices mLastLocation;
+    Intent mServiceIntent;
+    Context ctx;
     private boolean authInProgress = false;
     private ResultCallback<Status> mSubscribeResultCallback;
     private ResultCallback<Status> mCancelSubscriptionResultCallback;
     private ResultCallback<ListSubscriptionsResult> mListSubscriptionsResultCallback;
-
-//    private static String PreviousLocation = "";
-
-
-    public static final String FENCE_RECEIVER_ACTION =
-            "com.hitherejoe.aware.ui.fence.FenceReceiver.FENCE_RECEIVER_ACTION";
-
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
-
     private ArrayList<String> userLocations;
-
-    LocationRequest mLocationRequest;
-    LocationServices mLastLocation;
-
-    Intent mServiceIntent;
     private SensorService mSensorService;
-    Context ctx;
+
     public Context getCtx() {
         return ctx;
     }
-    public static MainActivity instance;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -131,10 +103,11 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
 
-        BackgroundService service = new BackgroundService();
-        BackgroundService.FenceReceiver receiver = service.new FenceReceiver();
+//        BackgroundService service = new BackgroundService();
+//        BackgroundService.FenceReceiver receiver = service.new FenceReceiver();
 //        BackgroundService.FenceReceiver receiver = new BackgroundService.FenceReceiver();
-        registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+        //registerReceiver(receiver, new IntentFilter(FENCE_RECEIVER_ACTION));
+        // unregisterReceiver(receiver);
 
         if (currentUser != null) {
 
@@ -216,7 +189,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
 
         //get user locations from firebase
-        if(getUser() == null)
+        if(FirebaseUtility.getUser() == null)
         {
             Intent intent = new Intent(this, FirebaseLogin.class);
             startActivity(intent);
@@ -348,6 +321,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             startService(mServiceIntent);
         }
     }
+
     private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -403,7 +377,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 });
     }
 
-
     private boolean checkLocationPermission() {
         if (!hasLocationPermission()) {
             Log.e("Tuts+", "Does not have location permission granted");
@@ -418,8 +391,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         return ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
     }
-
-    private final static int REQUEST_PERMISSION_RESULT_CODE = 42;
 
     private void requestLocationPermission() {
         ActivityCompat.requestPermissions(
@@ -623,93 +594,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                     12345
             );
         }
-        Log.w("GetLocation", "Getting location started...");
-        Awareness.SnapshotApi.getLocation(mApiClient)
-                .setResultCallback(new ResultCallback<LocationResult>() {
-                    @Override
-                    public void onResult(@NonNull LocationResult locationResult) {
-                        if (!locationResult.getStatus().isSuccess()) {
-                            Log.w(TAG, "Could not get location.");
-                            return;
-                        }
-                        Location location = locationResult.getLocation();
-                        Log.w(TAG, "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude());
-
-                        //save location in database only if it's different from previous
-//                        String lat = String.format("%.3f", location.getLatitude());
-//                        String lon = String.format("%.3f", location.getLongitude());
-
-//                        if(location.toString() != PreviousLocation) {
-//                            SaveUserLocation(location.toString());
-//                            PreviousLocation = location.toString();
-//                            // UpdateLocation(location);
-//                        }
-                    }
-                });
-
-//        Awareness.SnapshotApi.getLocation(mApiClient)
-//                .setResultCallback(new ResultCallback<LocationResult>() {
-//                    @Override
-//                    public void onResult(@NonNull LocationResult locationResult) {
-//
-//                        if (locationResult.getStatus().isSuccess()) {
-//                            Location location = locationResult.getLocation();
-//                            UpdateLocation(location);
-//
-//                        }
-//                    }
-//                });
 
     }
 
-
-    /**************************** LOCATION IN FIREBASE *********************************/
-
-
-//    private void getUserLocations(DataSnapshot dataSnapshot)
-//    {
-//        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
-//            String UserID = getUser().getUid();
-//            User user = new User();
-//
-//            if (ds.child(UserID).getValue(User.class) != null) {
-//                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
-//            }
-//
-//            if(user.getLocations() != null)
-//            {
-//                userLocations = user.getLocations();
-//            }
-//        }
-//    }
-
-    private void SaveUserLocation(String newLocation)
-    {
-        ArrayList<String> locations;
-        if(userLocations != null) {
-            locations = userLocations;
-        }
-        else{
-            locations = new ArrayList<String>();
-        }
-
-        locations.add(newLocation);
-
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if(currentUser != null) {
-            mDatabase = FirebaseDatabase.getInstance().getReference();
-            if (mDatabase != null) {
-                mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
-                mDatabase.push();
-            }
-        }
-    }
-
-    private FirebaseUser getUser() {
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        return currentUser;
-    }
 }

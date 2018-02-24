@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.function.DoubleUnaryOperator;
 
@@ -78,6 +79,26 @@ public class User {
     public Double weight;
     public String achivement;
 
+    public Timestamp timeStill;
+
+    public Timestamp getTimeStill() {
+        return timeStill;
+    }
+
+    public void setTimeStill(Timestamp timeStill) {
+        this.timeStill = timeStill;
+    }
+
+    public Timestamp getTimeWalking() {
+        return timeWalking;
+    }
+
+    public void setTimeWalking(Timestamp timeWalking) {
+        this.timeWalking = timeWalking;
+    }
+
+    public Timestamp timeWalking;
+
     public User() {
         // Default constructor required for calls to DataSnapshot.getValue(com.example.petra.healthylifeapp.User.class)
     }
@@ -90,6 +111,8 @@ public class User {
         this. weight = weight;
         this.achivement = achivement;
         this.locations = loc;
+        this.timeStill = null;
+        this.timeWalking = null;
 
     }
 

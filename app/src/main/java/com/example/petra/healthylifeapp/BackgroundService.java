@@ -6,7 +6,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,22 +15,17 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.TextView;
 
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.fence.AwarenessFence;
+import com.google.android.gms.awareness.fence.DetectedActivityFence;
 import com.google.android.gms.awareness.fence.FenceState;
 import com.google.android.gms.awareness.fence.FenceUpdateRequest;
 import com.google.android.gms.awareness.fence.HeadphoneFence;
 import com.google.android.gms.awareness.state.HeadphoneState;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.fitness.Fitness;
-import com.google.android.gms.location.ActivityRecognition;
 
 import static com.example.petra.healthylifeapp.MainActivity.FENCE_RECEIVER_ACTION;
 
@@ -71,6 +67,21 @@ public class BackgroundService extends IntentService implements GoogleApiClient.
 
         AwarenessFence headphoneFence = HeadphoneFence.during(HeadphoneState.PLUGGED_IN);
         createFence("headphoneFenceKey", headphoneFence);
+
+        AwarenessFence stillFence = DetectedActivityFence.starting(DetectedActivityFence.STILL);
+        createFence("stillFenceKey", stillFence);
+
+        AwarenessFence walkingFence = DetectedActivityFence.starting(DetectedActivityFence.WALKING);
+        createFence("walkingFenceKey", walkingFence);
+
+//        AwarenessFence invehicleFence = DetectedActivityFence.during(DetectedActivityFence.IN_VEHICLE);
+//        createFence("invehicleFenceKey", invehicleFence);
+//
+//        AwarenessFence onbicycleFence = DetectedActivityFence.during(DetectedActivityFence.ON_BICYCLE);
+//        createFence("onbicycleFenceKey", onbicycleFence);
+//
+//        AwarenessFence runningFence = DetectedActivityFence.during(DetectedActivityFence.RUNNING);
+//        createFence("runningFenceKey", runningFence);
     }
 
     @Override
@@ -130,14 +141,31 @@ public class BackgroundService extends IntentService implements GoogleApiClient.
                         builder.setContentText( "Headphones are plugged in." );
                         builder.setSmallIcon( R.mipmap.ic_launcher );
                         builder.setContentTitle( getString( R.string.app_name ) );
+                        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                        builder.setSound(alarmSound);
+                        long[] vibrate = { 0, 100 };
+                        builder.setVibrate(vibrate);
                         NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
                         break;
-                    case FenceState.FALSE:
-                        Log.i(TAG, "Headphones are NOT plugged in.");
-                        //textView.setText("Headphones are NOT plugged in.");
+                }
+            }
+
+            if (TextUtils.equals(fenceState.getFenceKey(), "stillFenceKey")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        Log.i(TAG, "You are still.");
+                        FirebaseUtility.SaveTime("timeStill");
+                        //textView.setText("Headphones are plugged in.");
                         break;
-                    case FenceState.UNKNOWN:
-                        Log.i(TAG, "The headphone fence is in an unknown state.");
+                }
+            }
+
+            if (TextUtils.equals(fenceState.getFenceKey(), "walkingFenceKey")) {
+                switch(fenceState.getCurrentState()) {
+                    case FenceState.TRUE:
+                        Log.i(TAG, "You are walking!");
+                        FirebaseUtility.SaveTime("timeWalking");
+                        //textView.setText("Headphones are plugged in.");
                         break;
                 }
             }

@@ -10,12 +10,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.awareness.Awareness;
@@ -37,7 +41,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.lang.reflect.Array;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,21 +54,21 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+    public static final String TAG = "StepCounter";
     public int counter=0;
     public GoogleApiClient mApiClient;
-
+    long oldTime=0;
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
-
-
     private ArrayList<String> userLocations;
-
     private String PreviousLat = "";
     private String PreviousLon = "";
+    private Timestamp timeStill = null;
+    private Timestamp timeWalking = null;
+    private Timer timer;
+    private TimerTask timerTask;
 
-
-    public static final String TAG = "StepCounter";
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
@@ -73,33 +81,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void onCreate() {
         super.onCreate();
 
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-        if(mDatabase != null) {
-            mDatabase.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    getUserLocations(dataSnapshot);
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
-                    // ...
-                }
-            });
-        }
-
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        super.onStartCommand(intent, flags, startId);
-
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-
-        if(currentUser != null) {
+        if(FirebaseUtility.getUser() != null) {
             //startTimer();
             mApiClient = new GoogleApiClient.Builder(SensorService.this)
                     .addApi(Fitness.SENSORS_API)
@@ -114,8 +96,43 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     // .enableAutoManage(this, 0, this)
                     .build();
             mApiClient.connect();
-        }
 
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                mDatabase.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
+
+                        String userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeStill");
+
+                        if (!userprop.equals("")) {
+                            timeStill = Timestamp.valueOf(userprop);
+                        }
+
+                        userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeWalking");
+
+                        if (!userprop.equals("")) {
+                            timeWalking = Timestamp.valueOf(userprop);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Log.w("Canceled", "loadPost:onCancelled", databaseError.toException());
+                        // ...
+                    }
+                });
+            }
+
+            //get first location when service starts
+            GetAndStoreCurrentLocation();
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
         return START_STICKY;
     }
 
@@ -128,9 +145,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         stoptimertask();
     }
 
-    private Timer timer;
-    private TimerTask timerTask;
-    long oldTime=0;
     public void startTimer() {
         //set a new Timer
         timer = new Timer();
@@ -154,6 +168,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                if (activity != null) {
                     // we are calling here activity's method
                     GetAndStoreCurrentLocation();
+                    CheckUserActivity();
 //                }
 
             }
@@ -198,26 +213,72 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         String lon = String.format("%.3f", location.getLongitude());
 
                         if(!lat.equals(PreviousLat) || !lon.equals(PreviousLon)) {
-                            SaveUserLocation(location.getLatitude() + "|" + location.getLongitude());
+                            FirebaseUtility.SaveUserLocation(location.getLatitude() + "|" + location.getLongitude(), userLocations);
                             PreviousLat = String.format("%.3f", location.getLatitude());
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
                     }
                 });
 
-//        Awareness.SnapshotApi.getLocation(mApiClient)
-//                .setResultCallback(new ResultCallback<LocationResult>() {
-//                    @Override
-//                    public void onResult(@NonNull LocationResult locationResult) {
-//
-//                        if (locationResult.getStatus().isSuccess()) {
-//                            Location location = locationResult.getLocation();
-//                            UpdateLocation(location);
-//
-//                        }
-//                    }
-//                });
+    }
 
+
+    //checking the timestamp when user registerd to be Still
+    private void CheckUserActivity() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+
+        //make sure that user don't get noifications of still-ness during the night
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        if (hour <= 22 && hour >= 9)              // Check if hour is not between 22 pm and 9am
+        {
+            //check how long it passed until user is still
+            if (timeStill != null) {
+                // get time difference in seconds
+                long milliseconds = now.getTime() - timeStill.getTime();
+                int seconds = (int) milliseconds / 1000;
+
+                // calculate hours minutes and seconds
+                //int hours = seconds / 3600;
+                int minutes = (seconds % 3600) / 60;
+
+                //that means that you're not getting notification twice
+                if (minutes > 60 && minutes < 66) {
+                    CreateNotification("You are sitting for too long! Please take a walk at least 5 minutes!");
+                }
+            }
+        }
+
+        //checking if the user is walking more than an hour
+        if(timeWalking != null)
+        {
+            long milliseconds = now.getTime() - timeWalking.getTime();
+            int seconds = (int) milliseconds / 1000;
+
+            // calculate hours minutes and seconds
+            //int hours = seconds / 3600;
+            int minutes = (seconds % 3600) / 60;
+
+            //that means that you're not getting notification twice
+            if(minutes > 60 && minutes < 66)
+            {
+                CreateNotification("Well done! You're walking for a quite long time!");
+            }
+        }
+    }
+
+    private void CreateNotification(String message)
+    {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+        builder.setContentText( message );
+        builder.setSmallIcon( R.mipmap.ic_launcher );
+        builder.setContentTitle( getString( R.string.app_name ) );
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        builder.setSound(alarmSound);
+        long[] vibrate = { 0, 100 };
+        builder.setVibrate(vibrate);
+        NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
     }
 
     @Override
@@ -233,69 +294,5 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
-    }
-
-
-    private void getUserLocations(DataSnapshot dataSnapshot)
-    {
-        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
-            String UserID = getUser().getUid();
-//            User user = new User();
-//
-//            if (ds.child(UserID).getValue(User.class) != null) {
-//                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
-//            }
-//
-//            if(user.getLocations() != null)
-//            {
-//                userLocations = user.getLocations();
-//            }
-
-            HashMap<String, Object> user = null;
-            if (ds.child(UserID).getValue() != null) {
-                user = (HashMap<String, Object>)ds.child(UserID).getValue();
-            }
-
-            if(user.get("locations") != null) {
-                //String lala = user.get("locations").toString();
-                Map<String, String> locations = new HashMap<>();
-                for (String key : locations.keySet()) {
-                    String value = locations.get(key);
-                    System.out.println("Key = " + key + ", Value = " + value);
-                    userLocations.add(value);
-                }
-            }
-
-        }
-    }
-
-    private void SaveUserLocation(String newLocation)
-    {
-        ArrayList<String> locations;
-        if(userLocations != null) {
-            locations = userLocations;
-        }
-        else{
-            locations = new ArrayList<String>();
-        }
-
-        locations.add(newLocation);
-
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if(currentUser != null) {
-            mDatabase = FirebaseDatabase.getInstance().getReference();
-            if (mDatabase != null) {
-                mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
-                mDatabase.push();
-            }
-        }
-    }
-
-    private FirebaseUser getUser() {
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        return currentUser;
     }
 }
