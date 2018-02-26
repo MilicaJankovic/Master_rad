@@ -21,9 +21,13 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.gms.awareness.Awareness;
+import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
 import com.google.android.gms.awareness.snapshot.LocationResult;
+import com.google.android.gms.awareness.snapshot.WeatherResult;
+import com.google.android.gms.awareness.state.Weather;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -31,6 +35,8 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.ActivityRecognitionResult;
+import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -55,9 +61,9 @@ import java.util.concurrent.TimeUnit;
 
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     public static final String TAG = "StepCounter";
-    public int counter=0;
+    public int counter = 0;
     public GoogleApiClient mApiClient;
-    long oldTime=0;
+    long oldTime = 0;
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
@@ -68,6 +74,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
+
+    //counters
+    public int TimeStill = 0;
+    public int TimeWalking = 0;
 
     public SensorService(Context applicationContext) {
         super();
@@ -81,7 +91,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void onCreate() {
         super.onCreate();
 
-        if(FirebaseUtility.getUser() != null) {
+        if (FirebaseUtility.getUser() != null) {
             //startTimer();
             mApiClient = new GoogleApiClient.Builder(SensorService.this)
                     .addApi(Fitness.SENSORS_API)
@@ -127,6 +137,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
             //get first location when service starts
             GetAndStoreCurrentLocation();
+            //CheckUserActivity();
+            GetCurrentActivity();
         }
     }
 
@@ -163,12 +175,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void initializeTimerTask() {
         timerTask = new TimerTask() {
             public void run() {
-                Log.i("in timer", "in timer ++++  "+ (counter++));
+                Log.i("in timer", "in timer ++++  " + (counter++));
 //                MainActivity activity = MainActivity.instance;
 //                if (activity != null) {
-                    // we are calling here activity's method
-                    GetAndStoreCurrentLocation();
-                    CheckUserActivity();
+                // we are calling here activity's method
+                GetAndStoreCurrentLocation();
+                //CheckUserActivity();
+                GetCurrentActivity();
 //                }
 
             }
@@ -191,9 +204,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public IBinder onBind(Intent intent) {
         return null;
     }
+
     @SuppressLint("MissingPermission")
-    public void GetAndStoreCurrentLocation()
-    {
+    public void GetAndStoreCurrentLocation() {
         Log.w("GetLocation", "Getting location started...");
         Awareness.SnapshotApi.getLocation(mApiClient)
                 .setResultCallback(new ResultCallback<LocationResult>() {
@@ -212,7 +225,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         String lat = String.format("%.3f", location.getLatitude());
                         String lon = String.format("%.3f", location.getLongitude());
 
-                        if(!lat.equals(PreviousLat) || !lon.equals(PreviousLon)) {
+                        if (!lat.equals(PreviousLat) || !lon.equals(PreviousLon)) {
                             FirebaseUtility.SaveUserLocation(location.getLatitude() + "|" + location.getLongitude(), userLocations);
                             PreviousLat = String.format("%.3f", location.getLatitude());
                             PreviousLon = String.format("%.3f", location.getLongitude());
@@ -251,8 +264,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         }
 
         //checking if the user is walking more than an hour
-        if(timeWalking != null)
-        {
+        if (timeWalking != null) {
             long milliseconds = now.getTime() - timeWalking.getTime();
             int seconds = (int) milliseconds / 1000;
 
@@ -261,22 +273,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             int minutes = (seconds % 3600) / 60;
 
             //that means that you're not getting notification twice
-            if(minutes > 60 && minutes < 66)
-            {
+            if (minutes > 60 && minutes < 66) {
                 CreateNotification("Well done! You're walking for a quite long time!");
             }
         }
     }
 
-    private void CreateNotification(String message)
-    {
+    private void CreateNotification(String message) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
-        builder.setContentText( message );
-        builder.setSmallIcon( R.mipmap.ic_launcher );
-        builder.setContentTitle( getString( R.string.app_name ) );
+        builder.setContentText(message);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
+        builder.setContentTitle(getString(R.string.app_name));
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         builder.setSound(alarmSound);
-        long[] vibrate = { 0, 100 };
+        long[] vibrate = {0, 100};
         builder.setVibrate(vibrate);
         NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
     }
@@ -294,5 +304,133 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+
+    @SuppressLint("MissingPermission")
+    public void GetCurrentActivity() {
+        Log.w("GetActivity", "Getting activity started...");
+        Awareness.SnapshotApi.getDetectedActivity(mApiClient)
+                .setResultCallback(new ResultCallback<DetectedActivityResult>() {
+                    @Override
+                    public void onResult(@NonNull DetectedActivityResult detectedActivityResult) {
+                        if (!detectedActivityResult.getStatus().isSuccess()) {
+                            Log.e(TAG, "Could not get the current activity.");
+                            return;
+                        }
+                        ActivityRecognitionResult ar = detectedActivityResult.getActivityRecognitionResult();
+                        DetectedActivity probableActivity = ar.getMostProbableActivity();
+                        Log.i(TAG, probableActivity.toString());
+
+                        int weatherCondition = detectWeather();
+
+                        switch (probableActivity.getType()) {
+                            case DetectedActivity.IN_VEHICLE: {
+                                Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
+
+                                if(weatherCondition != -1) {
+                                    switch (weatherCondition) {
+                                        case Weather.CONDITION_CLOUDY:
+                                            CreateNotification("It's cloudy! It's good you are in vehicle!");
+                                            break;
+                                        case Weather.CONDITION_CLEAR:
+                                            CreateNotification("It's clear outside! You should be walking instead!");
+                                            break;
+                                        case Weather.CONDITION_FOGGY:
+                                            CreateNotification("It's foggy outside! Drive carefully!");
+                                            break;
+                                        case Weather.CONDITION_RAINY:
+                                            CreateNotification("It's rainy! It's good you are in vehicle!");
+                                            break;
+                                        case Weather.CONDITION_SNOWY:
+                                            CreateNotification("It's snowy outside! Drive carefully!");
+                                            break;
+                                        case Weather.CONDITION_ICY:
+                                            CreateNotification("It's icy outside! Drive slow!");
+                                            break;
+                                    }
+                                }
+                                else{
+                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+                                }
+                                break;
+                            }
+                            case DetectedActivity.ON_BICYCLE: {
+                                Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
+                                break;
+                            }
+                            case DetectedActivity.ON_FOOT: {
+                                Log.e("ActivityRecognition", "On Foot: " + probableActivity.getConfidence());
+                                break;
+                            }
+                            case DetectedActivity.RUNNING: {
+                                Log.e("ActivityRecognition", "Running: " + probableActivity.getConfidence());
+                                break;
+                            }
+                            case DetectedActivity.STILL: {
+                                Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
+
+                                if (probableActivity.getConfidence() >= 75) {
+                                    TimeStill++;
+                                    TimeWalking = 0;
+                                    Log.e("TimeStill", "Time: " + TimeStill);
+                                }
+
+                                //this is one hour
+                                if (TimeStill >= 12) {
+                                    CreateNotification("You are sitting for too long! (SensorService)");
+                                    TimeStill = 0;
+                                }
+                                break;
+                            }
+                            case DetectedActivity.TILTING: {
+                                Log.e("ActivityRecognition", "Tilting: " + probableActivity.getConfidence());
+                                break;
+                            }
+                            case DetectedActivity.WALKING: {
+                                Log.e("ActivityRecognition", "Walking: " + probableActivity.getConfidence());
+                                if (probableActivity.getConfidence() >= 75) {
+                                    TimeWalking++;
+                                    TimeStill = 0;
+                                }
+
+                                if (TimeWalking >= 12) {
+                                    CreateNotification("You are walking for so long! Well done! (Sensor Service)");
+                                    TimeWalking = 0;
+                                }
+                                break;
+                            }
+                            case DetectedActivity.UNKNOWN: {
+                                Log.e("ActivityRecognition", "Unknown: " + probableActivity.getConfidence());
+                                break;
+                            }
+                        }
+                    }
+                });
+    }
+
+
+    private int detectWeather() {
+        LocationPermissionUtility ac = new LocationPermissionUtility(this);
+        if (!ac.checkLocationPermission()) {
+            return -1;
+        }
+
+        final int[] weatherCondition = {0};
+        Awareness.SnapshotApi.getWeather(mApiClient)
+                .setResultCallback(new ResultCallback<WeatherResult>() {
+                    @Override
+                    public void onResult(@NonNull WeatherResult weatherResult) {
+                        Weather weather = weatherResult.getWeather();
+
+                        if(weather != null) {
+
+                            weatherCondition[0] = weather.getConditions()[0];
+
+                        }
+                    }
+                });
+
+        return weatherCondition[0];
     }
 }

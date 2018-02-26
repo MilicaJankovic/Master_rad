@@ -1,5 +1,6 @@
 package com.example.petra.healthylifeapp;
 
+import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -22,10 +23,14 @@ import com.google.android.gms.awareness.fence.DetectedActivityFence;
 import com.google.android.gms.awareness.fence.FenceState;
 import com.google.android.gms.awareness.fence.FenceUpdateRequest;
 import com.google.android.gms.awareness.fence.HeadphoneFence;
+import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
 import com.google.android.gms.awareness.state.HeadphoneState;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.ActivityRecognitionResult;
+import com.google.android.gms.location.DetectedActivity;
 
 import static com.example.petra.healthylifeapp.MainActivity.FENCE_RECEIVER_ACTION;
 
@@ -51,6 +56,7 @@ public class BackgroundService extends IntentService implements GoogleApiClient.
         mApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Awareness.API)
                 .addConnectionCallbacks(this)
+                .addApi(ActivityRecognition.API)
                 //.enableAutoManage(this, 0, this)
                 .build();
         mApiClient.connect();

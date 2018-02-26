@@ -377,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 });
     }
 
-    private boolean checkLocationPermission() {
+    public boolean checkLocationPermission() {
         if (!hasLocationPermission()) {
             Log.e("Tuts+", "Does not have location permission granted");
             requestLocationPermission();
@@ -394,7 +394,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     private void requestLocationPermission() {
         ActivityCompat.requestPermissions(
-                MainActivity.this,
+                this,
                 new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                 REQUEST_PERMISSION_RESULT_CODE);
     }
