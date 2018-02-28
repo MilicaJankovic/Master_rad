@@ -70,8 +70,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private ArrayList<String> userLocations;
     private String PreviousLat = "";
     private String PreviousLon = "";
-    private Timestamp timeStill = null;
-    private Timestamp timeWalking = null;
+//    private Timestamp timeStill = null;
+//    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
 
@@ -114,17 +114,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
 
-                        String userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeStill");
+                        //region Code for using fences
+//                        String userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeStill");
 
-                        if (!userprop.equals("")) {
-                            timeStill = Timestamp.valueOf(userprop);
-                        }
+//                        if (!userprop.equals("")) {
+//                            timeStill = Timestamp.valueOf(userprop);
+//                        }
+//
+//                        userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeWalking");
+//
+//                        if (!userprop.equals("")) {
+//                            timeWalking = Timestamp.valueOf(userprop);
+//                        }
+                        //endregion
 
-                        userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeWalking");
-
-                        if (!userprop.equals("")) {
-                            timeWalking = Timestamp.valueOf(userprop);
-                        }
                     }
 
                     @Override
@@ -235,48 +238,55 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
     }
 
-
-    //checking the timestamp when user registerd to be Still
-    private void CheckUserActivity() {
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-
-        //make sure that user don't get noifications of still-ness during the night
+    private int countHourOfTheDay()
+    {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Date());
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        if (hour <= 22 && hour >= 9)              // Check if hour is not between 22 pm and 9am
-        {
-            //check how long it passed until user is still
-            if (timeStill != null) {
-                // get time difference in seconds
-                long milliseconds = now.getTime() - timeStill.getTime();
-                int seconds = (int) milliseconds / 1000;
+        return cal.get(Calendar.HOUR_OF_DAY);
+    }
 
-                // calculate hours minutes and seconds
-                //int hours = seconds / 3600;
-                int minutes = (seconds % 3600) / 60;
-
-                //that means that you're not getting notification twice
-                if (minutes > 60 && minutes < 66) {
-                    CreateNotification("You are sitting for too long! Please take a walk at least 5 minutes!");
-                }
-            }
-        }
-
-        //checking if the user is walking more than an hour
-        if (timeWalking != null) {
-            long milliseconds = now.getTime() - timeWalking.getTime();
-            int seconds = (int) milliseconds / 1000;
-
-            // calculate hours minutes and seconds
-            //int hours = seconds / 3600;
-            int minutes = (seconds % 3600) / 60;
-
-            //that means that you're not getting notification twice
-            if (minutes > 60 && minutes < 66) {
-                CreateNotification("Well done! You're walking for a quite long time!");
-            }
-        }
+    //an old function... this is with using fences (fences fire only when some change happens.. and not always)
+    //checking the timestamp when user registerd to be Still
+    private void CheckUserActivity() {
+//        Timestamp now = new Timestamp(System.currentTimeMillis());
+//
+//        //make sure that user don't get noifications of still-ness during the night
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(new Date());
+//        int hour = cal.get(Calendar.HOUR_OF_DAY);
+//        if (hour <= 22 && hour >= 9)              // Check if hour is not between 22 pm and 9am
+//        {
+//            //check how long it passed until user is still
+//            if (timeStill != null) {
+//                // get time difference in seconds
+//                long milliseconds = now.getTime() - timeStill.getTime();
+//                int seconds = (int) milliseconds / 1000;
+//
+//                // calculate hours minutes and seconds
+//                //int hours = seconds / 3600;
+//                int minutes = (seconds % 3600) / 60;
+//
+//                //that means that you're not getting notification twice
+//                if (minutes > 60 && minutes < 66) {
+//                    CreateNotification("You are sitting for too long! Please take a walk at least 5 minutes!");
+//                }
+//            }
+//        }
+//
+//        //checking if the user is walking more than an hour
+//        if (timeWalking != null) {
+//            long milliseconds = now.getTime() - timeWalking.getTime();
+//            int seconds = (int) milliseconds / 1000;
+//
+//            // calculate hours minutes and seconds
+//            //int hours = seconds / 3600;
+//            int minutes = (seconds % 3600) / 60;
+//
+//            //that means that you're not getting notification twice
+//            if (minutes > 60 && minutes < 66) {
+//                CreateNotification("Well done! You're walking for a quite long time!");
+//            }
+//        }
     }
 
     private void CreateNotification(String message) {
@@ -328,7 +338,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
 
-                                if(weatherCondition != -1) {
+                                if (weatherCondition != -1) {
                                     switch (weatherCondition) {
                                         case Weather.CONDITION_CLOUDY:
                                             CreateNotification("It's cloudy! It's good you are in vehicle!");
@@ -349,8 +359,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                             CreateNotification("It's icy outside! Drive slow!");
                                             break;
                                     }
-                                }
-                                else{
+                                } else {
                                     CreateNotification("You are in vehicle? Play some good music and drive carefully!");
                                 }
                                 break;
@@ -376,9 +385,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     Log.e("TimeStill", "Time: " + TimeStill);
                                 }
 
-                                //this is one hour
-                                if (TimeStill >= 12) {
-                                    CreateNotification("You are sitting for too long! (SensorService)");
+                                //this is one hour(12)
+                                //but it fires on 3-4 hours.. maybe confidence is not always > 75 during sittinng
+                                if (TimeStill >= 8) {
+
+                                    int hourOfTheDay = countHourOfTheDay();
+                                    //send notification if it's not in the middle of the night when sleeping
+                                    if(hourOfTheDay<= 22 && hourOfTheDay >=9) {
+                                        CreateNotification("You are sitting for too long!");
+                                    }
                                     TimeStill = 0;
                                 }
                                 break;
@@ -394,8 +409,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     TimeStill = 0;
                                 }
 
-                                if (TimeWalking >= 12) {
-                                    CreateNotification("You are walking for so long! Well done! (Sensor Service)");
+                                if (TimeWalking >= 8) {
+                                    CreateNotification("You are walking for so long! Well done!");
                                     TimeWalking = 0;
                                 }
                                 break;
@@ -423,7 +438,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     public void onResult(@NonNull WeatherResult weatherResult) {
                         Weather weather = weatherResult.getWeather();
 
-                        if(weather != null) {
+                        if (weather != null) {
 
                             weatherCondition[0] = weather.getConditions()[0];
 

@@ -57,17 +57,14 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         Button btnSave = (Button) findViewById(R.id.btnSave);
         btnSave.setOnClickListener(this);
 
-        if(getUser() == null)
-        {
+        if (getUser() == null) {
             Intent intent = new Intent(this, FirebaseLogin.class);
             startActivity(intent);
-        }
-        else
-        {
+        } else {
 //            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-           mDatabase = FirebaseDatabase.getInstance().getReference();
-           mDatabase.keepSynced(true);
-            if(mDatabase != null) {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            mDatabase.keepSynced(true);
+            if (mDatabase != null) {
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -85,9 +82,8 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         }
     }
 
-    private void getUserLocations(DataSnapshot dataSnapshot)
-    {
-        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+    private void getUserLocations(DataSnapshot dataSnapshot) {
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
             String UserID = getUser().getUid();
             User user = new User();
 
@@ -95,68 +91,85 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
                 user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
             }
 
-            if(user.getLocations() != null)
-            {
+            if (user.getLocations() != null) {
                 userLocations = user.getLocations();
             }
         }
     }
 
-    private void parseUserDetails(DataSnapshot dataSnapshot)
-    {
+    private void parseUserDetails(DataSnapshot dataSnapshot) {
         TextView txtUsername = (TextView) findViewById(R.id.txtUsername);
         TextView txtHeight = (TextView) findViewById(R.id.txtHeight);
         TextView txtWeight = (TextView) findViewById(R.id.txtWeight);
 
-        for(DataSnapshot ds: dataSnapshot.getChildren() )
-        {
+        for (DataSnapshot ds : dataSnapshot.getChildren()) {
             String UserID = getUser().getUid();
             User user = new User();
 
-            if(ds.child(UserID).getValue(User.class) != null)
-            {
-            user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
-            //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
-            user.setGender(ds.child(UserID).getValue(User.class).getGender());
-            user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
-            user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
-            user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
+            if (ds.child(UserID).getValue(User.class) != null) {
+                user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
+                //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
+                user.setGender(ds.child(UserID).getValue(User.class).getGender());
+                user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
+                user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
+                user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
+                user.setStepsGoal(ds.child(UserID).getValue(User.class).getStepsGoal());
 
-            txtUsername.setText(user.getUsername());
-            txtHeight.setText(user.getHeigh().toString());
-            txtWeight.setText(user.getWeight().toString());
+                txtUsername.setText(user.getUsername());
+                txtHeight.setText(user.getHeigh().toString());
+                txtWeight.setText(user.getWeight().toString());
 
-            RadioButton button = new RadioButton(this);
+                RadioButton button = new RadioButton(this);
 
-            switch(user.getAchivement())
-            {
-                case "Keep Weight":
-                     button = (RadioButton)findViewById(R.id.radioKeepWeight);
-                     break;
-                case "Lose Weight":
-                    button = (RadioButton)findViewById(R.id.radioLoseWeight);
-                    break;
-                case "Gain Weight":
-                    button = (RadioButton)findViewById(R.id.radioGainWeight);
-                    break;
+                switch (user.getAchivement()) {
+                    case "Keep Weight":
+                        button = (RadioButton) findViewById(R.id.radioKeepWeight);
+                        break;
+                    case "Lose Weight":
+                        button = (RadioButton) findViewById(R.id.radioLoseWeight);
+                        break;
+                    case "Gain Weight":
+                        button = (RadioButton) findViewById(R.id.radioGainWeight);
+                        break;
+                }
+
+                button.setChecked(true);
+
+                RadioButton button1 = new RadioButton(this);
+                switch (user.getGender()) {
+                    case "Male":
+                        button1 = (RadioButton) findViewById(R.id.radioMale);
+                        break;
+                    case "Female":
+                        button1 = (RadioButton) findViewById(R.id.radioFemale);
+                        break;
+                }
+
+                button1.setChecked(true);
+
+                RadioButton button2 = new RadioButton(this);
+                switch (user.getStepsGoal()) {
+                    case 5000:
+                        button2 = (RadioButton) findViewById(R.id.radio5000);
+                        break;
+                    case 10000:
+                        button2 = (RadioButton) findViewById(R.id.radio10000);
+                        break;
+                    case 15000:
+                        button2 = (RadioButton) findViewById(R.id.radio15000);
+                        break;
+                    default:
+                        button2 = (RadioButton) findViewById(R.id.radio10000);
+                        break;
+                }
+
+                button2.setChecked(true);
+            } else {
+                //10000 by default
+                RadioButton button2 = (RadioButton) findViewById(R.id.radio10000);
+                button2.setChecked(true);
             }
-
-            button.setChecked(true);
-
-            RadioButton button1 = new RadioButton(this);
-            switch(user.getGender())
-            {
-                case "Male":
-                    button1 = (RadioButton)findViewById(R.id.radioMale);
-                    break;
-                case "Female":
-                    button1 = (RadioButton)findViewById(R.id.radioFemale);
-                    break;
-            }
-
-            button1.setChecked(true);
         }
-    }
     }
 
     @Override
@@ -236,11 +249,13 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         RadioGroup groupAchivement = (RadioGroup) findViewById(R.id.radiogroupAchivement);
         RadioButton btnAchivement = (RadioButton) findViewById(groupAchivement.getCheckedRadioButtonId());
 
+        RadioGroup groupStepsGoal = (RadioGroup) findViewById(R.id.radiogroupStepsGoal);
+        RadioButton btnSteps = (RadioButton) findViewById(groupStepsGoal.getCheckedRadioButtonId());
 
 //        ArrayList<String> locations = userLocations;
 //        locations.add("13.45|11.46");
 
-        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations);
+        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations, Integer.parseInt(btnSteps.getText().toString()));
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
 

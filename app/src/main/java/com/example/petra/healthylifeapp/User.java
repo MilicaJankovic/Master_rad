@@ -22,10 +22,48 @@ public class User {
     public String email;
     public String gender;
     public ArrayList<String> locations;
+    public int stepsGoal;
+    public Double heigh;
+    public Double weight;
+    public String achivement;
+//    public Timestamp timeStill;
+//    public Timestamp timeWalking;
 
-    public ArrayList<String> getLocations() { return locations; }
 
-    public void setLocations(ArrayList<String> locations) {this.locations = locations; }
+    public User() {
+        // Default constructor required for calls to DataSnapshot.getValue(com.example.petra.healthylifeapp.User.class)
+    }
+
+    public User(String username, String email, String gender, Double height, Double weight, String achivement, ArrayList<String> loc, int stepsGoal) {
+        this.username = username;
+        this.email = email;
+        this.gender = gender;
+        this.heigh = height;
+        this.weight = weight;
+        this.achivement = achivement;
+        this.locations = loc;
+        this.stepsGoal = stepsGoal;
+//        this.timeStill = null;
+//        this.timeWalking = null;
+    }
+
+
+    public int getStepsGoal() {
+        return stepsGoal;
+    }
+
+    public void setStepsGoal(int stepsGoal) {
+        this.stepsGoal = stepsGoal;
+    }
+
+
+    public ArrayList<String> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(ArrayList<String> locations) {
+        this.locations = locations;
+    }
 
     public String getUsername() {
         return username;
@@ -75,49 +113,21 @@ public class User {
         this.achivement = achivement;
     }
 
-    public Double heigh;
-    public Double weight;
-    public String achivement;
-
-    public Timestamp timeStill;
-
-    public Timestamp getTimeStill() {
-        return timeStill;
-    }
-
-    public void setTimeStill(Timestamp timeStill) {
-        this.timeStill = timeStill;
-    }
-
-    public Timestamp getTimeWalking() {
-        return timeWalking;
-    }
-
-    public void setTimeWalking(Timestamp timeWalking) {
-        this.timeWalking = timeWalking;
-    }
-
-    public Timestamp timeWalking;
-
-    public User() {
-        // Default constructor required for calls to DataSnapshot.getValue(com.example.petra.healthylifeapp.User.class)
-    }
-
-    public User(String username, String email, String gender, Double height, Double weight, String achivement, ArrayList<String> loc) {
-        this.username = username;
-        this.email = email;
-        this.gender = gender;
-        this.heigh = height;
-        this. weight = weight;
-        this.achivement = achivement;
-        this.locations = loc;
-        this.timeStill = null;
-        this.timeWalking = null;
-
-    }
-
-
-
+//    public Timestamp getTimeStill() {
+//        return timeStill;
+//    }
+//
+//    public void setTimeStill(Timestamp timeStill) {
+//        this.timeStill = timeStill;
+//    }
+//
+//    public Timestamp getTimeWalking() {
+//        return timeWalking;
+//    }
+//
+//    public void setTimeWalking(Timestamp timeWalking) {
+//        this.timeWalking = timeWalking;
+//    }
 
 
 }

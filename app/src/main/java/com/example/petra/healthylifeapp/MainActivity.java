@@ -7,13 +7,19 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -84,6 +90,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private DatabaseReference mDatabase;
     private ArrayList<String> userLocations;
     private SensorService mSensorService;
+
+    private int notificationCounter = 0;
+
+    private int StepsGoal = 10000;
 
     public Context getCtx() {
         return ctx;
@@ -182,10 +192,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             }
         });
 
-            mDatabase = FirebaseDatabase.getInstance().getReference();
-            if (mDatabase != null) {
-                //writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
-            }
+//            mDatabase = FirebaseDatabase.getInstance().getReference();
+//            if (mDatabase != null) {
+//                writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
+//            }
         }
 
         //get user locations from firebase
@@ -202,6 +212,12 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         //getUserLocations(dataSnapshot);
+
+                        String steps = FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal");
+                        if(!steps.equals(""))
+                        {
+                            StepsGoal = Integer.parseInt(steps);
+                        }
                     }
 
                     @Override
@@ -540,6 +556,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                                 : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
                                 //   Log.i(TAG, "Total steps: " + total);
                                 ShowNumberOfSteps(String.valueOf(total));
+
+                                //notificationCounter is here to provide sending notfication for this event only once
+                                if(total >= StepsGoal && notificationCounter == 0)
+                                {
+                                    CreateNotification("Well Done! You achived your steps goal for today!");
+                                    notificationCounter ++;
+                                }
+                                else{
+                                    notificationCounter = 0;
+                                }
                             }
                         })
                 .addOnFailureListener(
@@ -597,4 +623,48 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     }
 
+
+    private void CreateNotification(String message) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+        builder.setContentText(message);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
+        builder.setContentTitle(getString(R.string.app_name));
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        builder.setSound(alarmSound);
+        long[] vibrate = {0, 100};
+        builder.setVibrate(vibrate);
+        NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //return super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.action_buttons, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //return super.onOptionsItemSelected(item);
+
+        switch (item.getItemId()) {
+            case R.id.googleSetup:
+                // User chose the "google setup in FirebaseLogin" item, show the app settings UI...
+                Intent firebaseLogin = new Intent(this, FirebaseLogin.class);
+                startActivity(firebaseLogin);
+                return true;
+
+            case R.id.configureProfile:
+                // User chose the "configure profile, this page" action, mark the current item
+                // as a favorite...
+                Intent configure = new Intent(this, ConfigureProfile.class);
+                startActivity(configure);
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+    }
 }

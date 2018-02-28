@@ -140,6 +140,40 @@
                     android:text="Gain Weight" />
             </RadioGroup>
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Steps Goal"
+                android:theme="@style/ThemeOverlay.TextViewPadding" />
+
+            <RadioGroup
+                android:id="@+id/radiogroupStepsGoal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <RadioButton
+                    android:id="@+id/radio5000"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="5000" />
+
+                <RadioButton
+                    android:id="@+id/radio10000"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="10000" />
+
+                <RadioButton
+                    android:id="@+id/radio15000"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="15000" />
+            </RadioGroup>
+
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"

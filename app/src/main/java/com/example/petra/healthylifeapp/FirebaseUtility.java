@@ -1,5 +1,10 @@
 package com.example.petra.healthylifeapp;
 
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v7.app.NotificationCompat;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
