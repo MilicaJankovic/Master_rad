@@ -5,6 +5,7 @@
     <string name="historyTitle">Walking History in past 7 days</string>
     <string name="google_play_services_key">AIzaSyCZXrOMibj--q42jq8eefHzuthiT5rUrEM</string>
     <string name="title_activity_firebase_login">FirebaseLogin</string>
+    <string name="title_show_maps">ShowMaps</string>
     <!-- <string name="google_play_services_key">AIzaSyAUnx1zKxpqV_uSfa6w0VMl_1D3Mx3amTQ</string>-->
 
 

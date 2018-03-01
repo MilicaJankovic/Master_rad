@@ -537,4 +537,37 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //return super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.action_buttons_history, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //return super.onOptionsItemSelected(item);
+
+        switch (item.getItemId()) {
+            case R.id.viewHistory:
+                // User chose the "View history" item
+                Intent viewHistory = new Intent(this, View.class);
+                startActivity(viewHistory);
+                return true;
+
+            case R.id.showMaps:
+                // User chose the "show maps" item
+                // as a favorite...
+                Intent showMaps = new Intent(this, Maps.class);
+                startActivity(showMaps);
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
 }
