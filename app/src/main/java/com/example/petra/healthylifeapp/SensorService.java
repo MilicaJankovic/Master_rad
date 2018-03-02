@@ -6,8 +6,11 @@ package com.example.petra.healthylifeapp;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.media.RingtoneManager;
@@ -79,6 +82,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public int TimeStill = 0;
     public int TimeWalking = 0;
 
+    public int UserSleepTime = 0;
+
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
@@ -142,6 +147,12 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             GetAndStoreCurrentLocation();
             //CheckUserActivity();
             GetCurrentActivity();
+
+            MyBroadCastReciever receiver = new MyBroadCastReciever();
+            IntentFilter screenStateFilter = new IntentFilter();
+            screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
+            screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+            registerReceiver(receiver, screenStateFilter);
         }
     }
 
@@ -150,6 +161,21 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         super.onStartCommand(intent, flags, startId);
         return START_STICKY;
     }
+
+
+
+    public class MyBroadCastReciever extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                Log.i("Check","Screen went OFF");
+            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+                Log.i("Check","Screen went ON");
+            }
+        }
+    }
+
 
     @Override
     public void onDestroy() {

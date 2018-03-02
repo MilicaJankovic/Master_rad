@@ -20,6 +20,7 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -64,7 +65,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
 
     public static final String TAG = "StepCounter";
     public static final String FENCE_RECEIVER_ACTION =
@@ -172,30 +173,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         t.start();
         /************************END STEPS*********************************/
-
-
-        /****************OPEN HISTORY CLICK********************************/
-        Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
-        buttonHistory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                OpenHistoryActivity(view);
-            }
-        });
-
-        /****************OPEN CALENDAR CLICK********************************/
-        Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
-        buttonCalendar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                OpenCalenadrActivity(view);
-            }
-        });
-
-//            mDatabase = FirebaseDatabase.getInstance().getReference();
-//            if (mDatabase != null) {
-//                writeNewUser(currentUser.getUid(), "Petra", currentUser.getEmail(), "female", 167.00, 55.00);
-//            }
         }
 
         //get user locations from firebase
@@ -228,6 +205,13 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 });
             }
         }
+
+        Button buttonHistory = (Button) findViewById(R.id.button_viewHistory);
+        buttonHistory.setOnClickListener(this);
+
+        /****************OPEN CALENDAR CLICK********************************/
+        Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
+        buttonCalendar.setOnClickListener(this);
 
     }
 
@@ -299,37 +283,6 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         }
 
         detectWeather();
-        //GetAndStoreCurrentLocation();
-
-//        final Handler handler = new Handler();
-//        final int delay = 60000; //milliseconds
-//
-//        handler.postDelayed(new Runnable(){
-//            public void run(){
-//                GetAndStoreCurrentLocation();
-//                handler.postDelayed(this, delay);
-//            }
-//        }, delay);
-
-        // Create the LocationRequest object
-//        LocationRequest mLocationRequest = LocationRequest.create()
-//                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-//                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
-//                .setFastestInterval(1 * 1000);
-//        final Handler handler = new Handler();
-//        final int delay = 60000; //milliseconds
-//        final Context context = getApplicationContext();
-//
-//        handler.postDelayed(new Runnable(){
-//            public void run(){
-//                getLocationDetails(MainActivity.this);
-//                handler.postDelayed(this, delay);
-//            }
-//        }, delay);
-        /*************SERVIS PREGLUPI********/
-//        instance = this;
-//        ctx = this;
-        setContentView(R.layout.activity_main);
 
         mSensorService = new SensorService(getApplicationContext());
         mServiceIntent = new Intent(getApplicationContext(), mSensorService.getClass());
@@ -590,7 +543,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     /***************************************ON CLICK EVENT FOR HISOTRY API************************************/
 
-    public void OpenHistoryActivity(View view) {
+    public void OpenHistoryActivity() {
         Intent history = new Intent(MainActivity.this, ViewHistoryAPI.class);
         startActivity(history);
     }
@@ -598,7 +551,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     /***************************************ON CLICK EVENT FOR OPENING CALENDAR************************************/
 
-    public void OpenCalenadrActivity(View view) {
+    public void OpenCalenadrActivity() {
         TextView textViewSteps = (TextView) findViewById(R.id.title_text_view);
         Intent calendar = new Intent(MainActivity.this, CalendarActivity.class);
         Bundle b = new Bundle();
@@ -665,6 +618,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        int i = v.getId();
+        if (i == R.id.button_showCalendar) {
+            OpenCalenadrActivity();
+        } else if (i == R.id.button_viewHistory) {
+            OpenHistoryActivity();
         }
     }
 }
