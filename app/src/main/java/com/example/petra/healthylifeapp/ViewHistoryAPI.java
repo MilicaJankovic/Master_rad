@@ -1,13 +1,9 @@
 package com.example.petra.healthylifeapp;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -60,11 +56,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -77,7 +71,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -100,16 +93,9 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     private ArrayList<Integer> lastWeekSteps;
 
 
-    //google Maps API
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    GoogleApiClient mGoogleApiClient;
-    Location mLastLocation;
-    Marker mCurrLocationMarker;
-    LocationRequest mLocationRequest;
-    private GoogleMap mMap;
+
 
     static List<DataSet> dataSetsBucket;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -144,40 +130,16 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
         mChart.setFitBars(true);
 
 
-        //google maps initialization
-        //get location on google map
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkLocationPermission();
-        }
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        coordi.add("43.325062;21.907176");
-        coordi.add("43.320921;21.915745");
-        coordi.add("43.319050;21.922033");
-        coordi.add("43.317943;21.924704");
-        coordi.add("43.315675;21.926957");
-    }
-
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
-
 
     }
 
 
-    private void setData(int count) {
+
+    private void setData(int count)
+    {
         ArrayList<BarEntry> yVals = new ArrayList<>();
 
-        for (int i = 0; i < count; i++) {
+        for(int i = 0; i < count; i++){
             yVals.add(new BarEntry(i, lastWeekSteps.get(i)));
         }
 
@@ -205,59 +167,9 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
-        //Initialize Google Play Services
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this,
-                    android.Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                buildGoogleApiClient();
-                mMap.setMyLocationEnabled(true);
-            }
-        } else {
-            buildGoogleApiClient();
-            mMap.setMyLocationEnabled(true);
-        }
-
-        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
-        DrawLine();
-
-        ZoomMap();
     }
 
-    public boolean checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Asking user if explanation is needed
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    android.Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-                //Prompt the user once explanation has been shown
-                ActivityCompat.requestPermissions(this,
-                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-
-
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this,
-                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-            }
-            return false;
-        } else {
-            return true;
-        }
-    }
 
     /**
      * Inserts and reads data by chaining {@link Task} from {@link #insertData()} and {@link
@@ -406,7 +318,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
      * better option would be to dump the data you receive to a local data directory to avoid exposing
      * it to other applications.
      */
-    public void printData(DataReadResponse dataReadResult) {
+    public  void printData(DataReadResponse dataReadResult) {
         // [START parse_read_data_result]
         // If the DataReadRequest object specified aggregated data, dataReadResult will be returned
         // as buckets containing DataSets, instead of just DataSets.
@@ -431,7 +343,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
     }
 
     // [START parse_dataset]
-    private void dumpDataSet(DataSet dataSet) {
+    private  void dumpDataSet(DataSet dataSet) {
         Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
         DateFormat dateFormat = DateFormat.getDateInstance();
         DateFormat timeFormat = DateFormat.getTimeInstance();
@@ -452,7 +364,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 
     }
 
-    public void UpdateHistoryTextView(String steps, String endDate) {
+    public  void UpdateHistoryTextView(String steps, String endDate) {
         //    TextView textViewSteps = (TextView) findViewById(R.id.history_text_view);
 
 
@@ -468,6 +380,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 //                    String goal = outFormat.format(date);
 
         //   textViewSteps.setText(textViewSteps.getText() + "\n" + endDate + " " + steps);
+
 
 
     }
@@ -612,10 +525,7 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(1000);
-        mLocationRequest.setFastestInterval(1000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
     }
 
     @Override
@@ -628,64 +538,36 @@ public class ViewHistoryAPI extends AppCompatActivity implements OnMapReadyCallb
 
     }
 
-    private ArrayList<String> coordi = new ArrayList<>();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //return super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.action_buttons_history, menu);
+        return true;
+    }
 
-    private void ZoomMap() {
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //return super.onOptionsItemSelected(item);
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
-        if (location != null)
-        {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
+        switch (item.getItemId()) {
+            case R.id.viewHistory:
+                // User chose the "View history" item
+                Intent viewHistory = new Intent(this, View.class);
+                startActivity(viewHistory);
+                return true;
 
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
-                    .zoom(14)                   // Sets the zoom
-                    .bearing(90)                // Sets the orientation of the camera to east
-                    .tilt(40)                   // Sets the tilt of the camera to 30 degrees
-                    .build();                   // Creates a CameraPosition from the builder
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            case R.id.showMaps:
+                // User chose the "show maps" item
+                // as a favorite...
+                Intent showMaps = new Intent(this, Maps.class);
+                startActivity(showMaps);
+                return true;
 
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
         }
     }
 
-    protected void DrawLine() {
-        ArrayList<LatLng> points;
-        PolylineOptions lineOptions = null;
-        points = new ArrayList<>();
-        lineOptions = new PolylineOptions();
-        // Traversing through all the routes
-        for (int i = 0; i < coordi.size(); i++) {
-
-
-
-                String[] LonLat = coordi.get(i).split(";");
-                double lat = Double.parseDouble(LonLat[0]);
-                double lng = Double.parseDouble(LonLat[1]);
-                LatLng position = new LatLng(lat, lng);
-
-                points.add(position);
-
-
-
-        }
-
-        // Adding all the points in the route to LineOptions
-        lineOptions.addAll(points);
-        lineOptions.width(10);
-        lineOptions.color(Color.RED);
-
-        Log.d("DrawLines","DrawLines lineoptions decoded");
-        // Drawing polyline in the Google Map for the i-th route
-        if(lineOptions != null) {
-            mMap.addPolyline(lineOptions);
-        }
-        else {
-            Log.d("DrawLines","without Polylines drawn");
-        }
-    }
 }
