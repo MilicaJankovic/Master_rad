@@ -113,6 +113,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             mApiClient.connect();
 
             mDatabase = FirebaseDatabase.getInstance().getReference();
+            mDatabase.keepSynced(true);
             if (mDatabase != null) {
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override
