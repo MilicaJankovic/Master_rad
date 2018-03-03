@@ -81,7 +81,12 @@
                 android:value=".MainActivity" />
 
         </activity>
+        <activity
+            android:name=".Maps"
+            android:label="@string/title_activity_show_maps"
+            android:theme="@style/AppTheme.NoActionBar">
 
+        </activity>
         <activity
             android:name=".ConfigureProfile"
             android:parentActivityName=".FirebaseLogin"
