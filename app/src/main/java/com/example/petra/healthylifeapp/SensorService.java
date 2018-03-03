@@ -66,6 +66,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public static final String TAG = "StepCounter";
     public int counter = 0;
     public GoogleApiClient mApiClient;
+    //counters
+    public int TimeStill = 0;
+    public int TimeWalking = 0;
+    public int UserSleepTime = 0;
     long oldTime = 0;
     //firebase
     private FirebaseAuth mAuth;
@@ -77,12 +81,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
-
-    //counters
-    public int TimeStill = 0;
-    public int TimeWalking = 0;
-
-    public int UserSleepTime = 0;
 
     public SensorService(Context applicationContext) {
         super();
@@ -163,21 +161,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return START_STICKY;
     }
 
-
-
-    public class MyBroadCastReciever extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                Log.i("Check","Screen went OFF");
-            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-                Log.i("Check","Screen went ON");
-            }
-        }
-    }
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -190,13 +173,31 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void startTimer() {
         //set a new Timer
         timer = new Timer();
-
         //initialize the TimerTask's job
         initializeTimerTask();
 
+        int hour = countHourOfTheDay();
+        //if time is between 00:00 and 01:00 set shared pref to false so notification will be fired tomorow again
+        if(hour >= 24 && hour <= 1)
+        {
+            SetSharedPreference(false);
+        }
         //schedule the timer, to wake up every 1 second
         //every 60 seconds
         timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(5), TimeUnit.MINUTES.toMillis(5)); //
+    }
+
+    private void SetSharedPreference(Boolean value)
+    {
+        SharedPreferences.Editor editor = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE).edit();
+        editor.putBoolean("FiredToday", value);
+        editor.apply();
+    }
+
+    public void startTimerActiviy(){
+        timer = new Timer();
+        initializeTimerTaskActivity();
+        timer.schedule(timerTask, 300000, 300000); //
     }
 
     /**
@@ -206,14 +207,17 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         timerTask = new TimerTask() {
             public void run() {
                 Log.i("in timer", "in timer ++++  " + (counter++));
-//                MainActivity activity = MainActivity.instance;
-//                if (activity != null) {
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
-                //CheckUserActivity();
-                GetCurrentActivity();
-//                }
+            }
+        };
+    }
 
+    public void initializeTimerTaskActivity() {
+        timerTask = new TimerTask() {
+            public void run() {
+                Log.i("in timer", "in timer ++++  " + (counter++));
+                GetCurrentActivity();
             }
         };
     }
@@ -331,6 +335,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         startTimer();
+        startTimerActiviy();
     }
 
     @Override
@@ -342,7 +347,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
     }
-
 
     @SuppressLint("MissingPermission")
     public void GetCurrentActivity() {
@@ -414,7 +418,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                                 //this is one hour(12)
                                 //but it fires on 3-4 hours.. maybe confidence is not always > 75 during sittinng
-                                if (TimeStill >= 8) {
+                                if (TimeStill >= 10) {
 
                                     int hourOfTheDay = countHourOfTheDay();
                                     //send notification if it's not in the middle of the night when sleeping
@@ -436,7 +440,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     TimeStill = 0;
                                 }
 
-                                if (TimeWalking >= 8) {
+                                if (TimeWalking >= 5) {
                                     CreateNotification("You are walking for so long! Well done!");
                                     TimeWalking = 0;
                                 }
@@ -450,7 +454,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     }
                 });
     }
-
 
     private int detectWeather() {
         LocationPermissionUtility ac = new LocationPermissionUtility(this);
@@ -474,5 +477,17 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 });
 
         return weatherCondition[0];
+    }
+
+    public class MyBroadCastReciever extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                Log.i("Check","Screen went OFF");
+            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+                Log.i("Check","Screen went ON");
+            }
+        }
     }
 }

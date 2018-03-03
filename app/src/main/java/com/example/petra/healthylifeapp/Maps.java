@@ -54,7 +54,7 @@ import java.util.TimerTask;
  * Created by Milica on 2/21/2018.
  */
 
-public class Maps extends AppCompatActivity  implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+public class Maps extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
     //google Maps API
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
@@ -63,8 +63,6 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
     Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
     private GoogleMap mMap;
-
-    public GoogleApiClient mApiClient;
 
     //firebase
     private FirebaseAuth mAuth;
@@ -76,7 +74,15 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_map);
 
-        if (getUser() != null) {
+        if (FirebaseUtility.getUser() != null) {
+
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+            mGoogleApiClient.connect();
+
 //            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
             mDatabase = FirebaseDatabase.getInstance().getReference();
             mDatabase.keepSynced(true);
@@ -84,7 +90,12 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
+                        Log.i("Firebase: ", "On data change");
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
+                        if (userLocations != null)
+                            Log.i("Firebase_locs: ", "not null");
+                        else
+                            Log.i("Firebase_locs: ", "null");
                     }
 
                     @Override
@@ -95,9 +106,6 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
                 });
             }
         }
-
-
-
 
         //google maps initialization
         //get location on google map
@@ -111,22 +119,8 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
         mapFragment.getMapAsync(this);
 
 
+    }
 
-    }
-    private FirebaseUser getUser() {
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        return currentUser;
-    }
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
-
-    }
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         mLocationRequest = new LocationRequest();
@@ -155,20 +149,19 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
             if (ContextCompat.checkSelfPermission(this,
                     android.Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
-                buildGoogleApiClient();
+                //buildGoogleApiClient();
                 mMap.setMyLocationEnabled(true);
             }
         } else {
-            buildGoogleApiClient();
+            //buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
 
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
+        ZoomMap();
 
         DrawLines();
-
-        ZoomMap();
     }
 
     public boolean checkLocationPermission() {
@@ -210,39 +203,51 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
             return;
         }
         Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
-        if (location != null)
-        {
+        if (location != null) {
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 13));
 
             CameraPosition cameraPosition = new CameraPosition.Builder()
                     .target(new LatLng(location.getLatitude(), location.getLongitude()))      // Sets the center of the map to location user
-                    .zoom(14)                   // Sets the zoom
+                    .zoom(30)                   // Sets the zoom
                     .bearing(90)                // Sets the orientation of the camera to east
                     .tilt(40)                   // Sets the tilt of the camera to 30 degrees
                     .build();                   // Creates a CameraPosition from the builder
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
+        } else if (userLocations != null) {
+//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(userLocations.get(0).split("\\|")[0]), Double.parseDouble(userLocations.get(0).split("\\|")[1])), 13));
+//
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(Double.parseDouble(userLocations.get(0).split("\\|")[0]), Double.parseDouble(userLocations.get(1).split("\\|")[0])))      // Sets the center of the map to location user
+                    .zoom(30)                   // Sets the zoom
+                    .bearing(90)                // Sets the orientation of the camera to east
+                    .tilt(40)                   // Sets the tilt of the camera to 30 degrees
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+            //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(userLocations.get(0).split("\\|")[0]), Double.parseDouble(userLocations.get(0).split("\\|")[1])), cameraPosition.zoom));
+//
+
+            // Set listeners for click events.
+//            mMap.setOnPolylineClickListener();
+//            mMap.setOnPolygonClickListener(this);
         }
     }
+
+
     protected void DrawLines() {
-        ArrayList<LatLng> points;
-        PolylineOptions lineOptions = null;
-        points = new ArrayList<>();
-        lineOptions = new PolylineOptions();
+        ArrayList<LatLng> points = new ArrayList<>();
+        PolylineOptions lineOptions = new PolylineOptions();
         // Traversing through all the routes
 
         if (userLocations != null) {
             for (int i = 0; i < userLocations.size(); i++) {
-
-
-                String[] LonLat = userLocations.get(i).split("|");
+                String[] LonLat = userLocations.get(i).split("\\|");
                 double lat = Double.parseDouble(LonLat[0]);
                 double lng = Double.parseDouble(LonLat[1]);
                 LatLng position = new LatLng(lat, lng);
 
                 points.add(position);
-
-
             }
 
             // Adding all the points in the route to LineOptions

@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.media.RingtoneManager;
@@ -213,6 +214,16 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
         buttonCalendar.setOnClickListener(this);
 
+
+        SetSharedPreference(false);
+    }
+
+
+    private void SetSharedPreference(Boolean value)
+    {
+        SharedPreferences.Editor editor = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE).edit();
+        editor.putBoolean("FiredToday", value);
+        editor.apply();
     }
 
     private Location getLocationDetails(Context mContext) {
@@ -511,13 +522,13 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                 ShowNumberOfSteps(String.valueOf(total));
 
                                 //notificationCounter is here to provide sending notfication for this event only once
-                                if(total >= StepsGoal && notificationCounter == 0)
+                                SharedPreferences prefs = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE);
+                                Boolean firedToday = prefs.getBoolean("FiredToday", false);
+                                if(total >= StepsGoal && !firedToday)
                                 {
                                     CreateNotification("Well Done! You achived your steps goal for today!");
-                                    notificationCounter ++;
-                                }
-                                else{
-                                    notificationCounter = 0;
+                                    //notificationCounter ++;
+                                    SetSharedPreference(true);
                                 }
                             }
                         })
