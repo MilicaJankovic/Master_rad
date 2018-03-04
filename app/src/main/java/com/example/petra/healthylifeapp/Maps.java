@@ -76,9 +76,6 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_map);
 
-
-
-
         //google maps initialization
         //get location on google map
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -155,6 +152,7 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
                         DrawLines(userLocations);
+                        ZoomMap();
                     }
 
                     @Override
@@ -165,11 +163,6 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
                 });
             }
         }
-
-
-
-
-        ZoomMap();
     }
 
     public boolean checkLocationPermission() {
@@ -224,7 +217,21 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
         }
+        else if(userLocations != null)
+        {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.parseDouble(userLocations.get(0).split("\\|")[0]), Double.parseDouble(userLocations.get(0).split("\\|")[1])), 13));
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(new LatLng(Double.parseDouble(userLocations.get(0).split("\\|")[0]), Double.parseDouble(userLocations.get(0).split("\\|")[1])))      // Sets the center of the map to location user
+                    .zoom(14)                   // Sets the zoom
+                    .bearing(90)                // Sets the orientation of the camera to east
+                    .tilt(40)                   // Sets the tilt of the camera to 30 degrees
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+        }
     }
+
+
     protected void DrawLines(ArrayList<String> locations) {
         ArrayList<LatLng> points;
         PolylineOptions lineOptions = null;
@@ -234,22 +241,19 @@ public class Maps extends AppCompatActivity  implements OnMapReadyCallback, Goog
 
         if (locations != null) {
             for (int i = 0; i < locations.size(); i++) {
-
-
                 String[] LonLat = locations.get(i).split("\\|");
                 double lat = Double.parseDouble(LonLat[0]);
                 double lng = Double.parseDouble(LonLat[1]);
                 LatLng position = new LatLng(lat, lng);
 
                 points.add(position);
-
-
             }
 
             // Adding all the points in the route to LineOptions
             lineOptions.addAll(points);
             lineOptions.width(10);
             lineOptions.color(Color.RED);
+            lineOptions.geodesic(true);
 
             Log.d("DrawLines", "DrawLines lineoptions decoded");
             // Drawing polyline in the Google Map for the i-th route
