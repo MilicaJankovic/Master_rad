@@ -81,6 +81,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
+    private Timer timerActivity;
+    private TimerTask timerTaskActivity;
     private Boolean locationReset;
 
     public SensorService(Context applicationContext) {
@@ -170,7 +172,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         Log.i("EXIT", "ondestroy!");
         Intent broadcastIntent = new Intent("uk.ac.shef.oak.ActivityRecognition.RestartSensor");
         sendBroadcast(broadcastIntent);
-        stoptimertask();
+        stoptimertasks();
     }
 
     public void startTimer() {
@@ -184,13 +186,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         if(hour >= 24 && hour <= 1)
         {
             SetSharedPreference(false);
-
         }
 
-
-
-        //schedule the timer, to wake up every 1 second
-        //every 60 seconds
+        //schedule the timer, to wake up every 60 seconds
         timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(1)); //
     }
 
@@ -202,9 +200,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
     public void startTimerActiviy(){
-        timer = new Timer();
+        timerActivity = new Timer();
         initializeTimerTaskActivity();
-        timer.schedule(timerTask, 300000, 300000); //
+        timer.schedule(timerTaskActivity, 30000, 30000); //
     }
 
     /**
@@ -233,7 +231,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
     public void initializeTimerTaskActivity() {
-        timerTask = new TimerTask() {
+        timerTaskActivity = new TimerTask() {
             public void run() {
                 Log.i("in timer", "in timer ++++  " + (counter++));
                 GetCurrentActivity();
@@ -244,11 +242,17 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     /**
      * not needed
      */
-    public void stoptimertask() {
+    public void stoptimertasks() {
         //stop the timer, if it's not already null
         if (timer != null) {
             timer.cancel();
             timer = null;
+        }
+
+        //stop the timer, if it's not already null
+        if (timerActivity != null) {
+            timerActivity.cancel();
+            timerActivity = null;
         }
     }
 
@@ -435,9 +439,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     Log.e("TimeStill", "Time: " + TimeStill);
                                 }
 
-                                //this is one hour(12)
-                                //but it fires on 3-4 hours.. maybe confidence is not always > 75 during sittinng
-                                if (TimeStill >= 10) {
+                                //this is one hour(120 (because it is taking activity on 30 secons))
+                                if (TimeStill >= 120) {
 
                                     int hourOfTheDay = countHourOfTheDay();
                                     //send notification if it's not in the middle of the night when sleeping
@@ -459,7 +462,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     TimeStill = 0;
                                 }
 
-                                if (TimeWalking >= 5) {
+                                if (TimeWalking >= 120) {
                                     CreateNotification("You are walking for so long! Well done!");
                                     TimeWalking = 0;
                                 }
