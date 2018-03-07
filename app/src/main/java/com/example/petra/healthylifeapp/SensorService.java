@@ -81,6 +81,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
+    private Boolean locationReset;
 
     public SensorService(Context applicationContext) {
         super();
@@ -152,6 +153,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
             screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(receiver, screenStateFilter);
+
+            locationReset = false;
         }
     }
 
@@ -181,10 +184,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         if(hour >= 24 && hour <= 1)
         {
             SetSharedPreference(false);
+
         }
+
+
+
         //schedule the timer, to wake up every 1 second
         //every 60 seconds
-        timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(5), TimeUnit.MINUTES.toMillis(5)); //
+        timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(1)); //
     }
 
     private void SetSharedPreference(Boolean value)
@@ -207,6 +214,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         timerTask = new TimerTask() {
             public void run() {
                 Log.i("in timer", "in timer ++++  " + (counter++));
+                int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY); //Current hour
+
+                if(currentHour == 24 && !locationReset)
+                {
+                    FirebaseUtility.ResetUserLocations();
+                    locationReset = true;
+                }
+                if(currentHour != 24 && locationReset)
+                {
+                    locationReset = false;
+                }
+
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
             }

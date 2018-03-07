@@ -115,4 +115,20 @@ public class FirebaseUtility {
             }
         }
     }
+
+    public static void ResetUserLocations()
+    {
+        ArrayList<String> locations = new ArrayList<>();
+
+
+        FirebaseUser currentUser = getUser();
+
+        if(currentUser != null) {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
+                mDatabase.push();
+            }
+        }
+    }
 }
