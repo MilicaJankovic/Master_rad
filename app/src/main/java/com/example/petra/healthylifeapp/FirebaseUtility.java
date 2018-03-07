@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 
+import com.google.android.gms.vision.barcode.Barcode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -12,7 +13,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,6 +68,27 @@ public class FirebaseUtility {
     }
 
 
+    public static HashMap<String, Double> getUserCalories(DataSnapshot dataSnapshot)
+    {
+        HashMap<String, Double> calories = null;
+        for(DataSnapshot ds: dataSnapshot.getChildren() ) {
+            String UserID = FirebaseUtility.getUser().getUid();
+
+            HashMap<String, Object> user = null;
+            if (ds.child(UserID).getValue() != null) {
+                user = (HashMap<String, Object>)ds.child(UserID).getValue();
+            }
+
+            if(user.get("calories") != null) {
+                //calories = new HashMap<>();
+                calories = (HashMap<String, Double>) user.get("calories");
+            }
+        }
+
+        return calories;
+    }
+
+
     public static ArrayList<String> getUserLocations(DataSnapshot dataSnapshot)
     {
         ArrayList<String> userLocs = null;
@@ -111,6 +135,30 @@ public class FirebaseUtility {
             mDatabase = FirebaseDatabase.getInstance().getReference();
             if (mDatabase != null) {
                 mDatabase.child("users").child(currentUser.getUid()).child("locations").setValue(locations);
+                mDatabase.push();
+            }
+        }
+    }
+
+    public static void saveUserCaolries(String date, Double newCalorieCalc, HashMap<String, Double> userCalories)
+    {
+        HashMap<String, Double> calories;
+        if(userCalories != null) {
+            calories = userCalories;
+        }
+        else{
+            calories = new HashMap<>();
+        }
+
+        //String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+        calories.put(date, newCalorieCalc);
+
+        FirebaseUser currentUser = getUser();
+
+        if(currentUser != null) {
+            mDatabase = FirebaseDatabase.getInstance().getReference();
+            if (mDatabase != null) {
+                mDatabase.child("users").child(currentUser.getUid()).child("calories").setValue(calories);
                 mDatabase.push();
             }
         }

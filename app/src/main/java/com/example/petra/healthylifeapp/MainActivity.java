@@ -226,6 +226,13 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         editor.apply();
     }
 
+    private void SetSharedPreferenceLong(String key, Long value)
+    {
+        SharedPreferences.Editor editor = getSharedPreferences(key, MODE_PRIVATE).edit();
+        editor.putLong(key, value);
+        editor.apply();
+    }
+
     private Location getLocationDetails(Context mContext) {
         Location location = null;
         if (mApiClient != null) {
@@ -530,6 +537,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                     //notificationCounter ++;
                                     SetSharedPreference(true);
                                 }
+
+                                SetSharedPreferenceLong("StepsCount", total);
                             }
                         })
                 .addOnFailureListener(

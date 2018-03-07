@@ -28,6 +28,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ConfigureProfile extends AppCompatActivity implements View.OnClickListener {
 
@@ -36,6 +37,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
     private DatabaseReference mDatabase;
 
     private ArrayList<String> userLocations;
+    private HashMap<String, Double> userCalories;
 
 
     @Override
@@ -69,7 +71,8 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         parseUserDetails(dataSnapshot);
-                        getUserLocations(dataSnapshot);
+                        userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
+                        userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
                     }
 
                     @Override
@@ -82,46 +85,28 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         }
     }
 
-    private void getUserLocations(DataSnapshot dataSnapshot) {
-        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-            String UserID = getUser().getUid();
-            User user = new User();
-
-            if (ds.child(UserID).getValue(User.class) != null) {
-                user.setLocations(ds.child(UserID).getValue(User.class).getLocations());
-            }
-
-            if (user.getLocations() != null) {
-                userLocations = user.getLocations();
-            }
-        }
-    }
-
     private void parseUserDetails(DataSnapshot dataSnapshot) {
         TextView txtUsername = (TextView) findViewById(R.id.txtUsername);
         TextView txtHeight = (TextView) findViewById(R.id.txtHeight);
         TextView txtWeight = (TextView) findViewById(R.id.txtWeight);
+        TextView txtBirthDate = (TextView) findViewById(R.id.txtBirthDate);
 
         for (DataSnapshot ds : dataSnapshot.getChildren()) {
             String UserID = getUser().getUid();
-            User user = new User();
+//            User user = new User();
+            HashMap<String, Object> user;
 
-            if (ds.child(UserID).getValue(User.class) != null) {
-                user.setUsername(ds.child(UserID).getValue(User.class).getUsername());
-                //user.setEmail(ds.child(UserID).getValue(User.class).getEmail());
-                user.setGender(ds.child(UserID).getValue(User.class).getGender());
-                user.setAchivement(ds.child(UserID).getValue(User.class).getAchivement());
-                user.setHeigh(ds.child(UserID).getValue(User.class).getHeigh());
-                user.setWeight(ds.child(UserID).getValue(User.class).getWeight());
-                user.setStepsGoal(ds.child(UserID).getValue(User.class).getStepsGoal());
+            if (ds.child(UserID).getValue() != null) {
+                user = (HashMap<String, Object>) ds.child(UserID).getValue();
 
-                txtUsername.setText(user.getUsername());
-                txtHeight.setText(user.getHeigh().toString());
-                txtWeight.setText(user.getWeight().toString());
+                txtUsername.setText(user.get("username").toString());
+                txtHeight.setText(user.get("height").toString());
+                txtWeight.setText(user.get("weight").toString());
+                txtBirthDate.setText(user.get("birthDate").toString());
 
                 RadioButton button = new RadioButton(this);
 
-                switch (user.getAchivement()) {
+                switch (user.get("achivement").toString()) {
                     case "Keep Weight":
                         button = (RadioButton) findViewById(R.id.radioKeepWeight);
                         break;
@@ -136,7 +121,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
                 button.setChecked(true);
 
                 RadioButton button1 = new RadioButton(this);
-                switch (user.getGender()) {
+                switch (user.get("gender").toString()) {
                     case "Male":
                         button1 = (RadioButton) findViewById(R.id.radioMale);
                         break;
@@ -147,27 +132,28 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
 
                 button1.setChecked(true);
 
-                RadioButton button2 = new RadioButton(this);
-                switch (user.getStepsGoal()) {
-                    case 5000:
-                        button2 = (RadioButton) findViewById(R.id.radio5000);
-                        break;
-                    case 10000:
-                        button2 = (RadioButton) findViewById(R.id.radio10000);
-                        break;
-                    case 15000:
-                        button2 = (RadioButton) findViewById(R.id.radio15000);
-                        break;
-                    default:
-                        button2 = (RadioButton) findViewById(R.id.radio10000);
-                        break;
-                }
+//                RadioButton button2 = new RadioButton(this);
+//                Long stepsGoal = Long.getLong(user.get("stepsGoal").toString());
+//                switch (Integer.getInteger(stepsGoal.toString())) {
+//                    case 5000:
+//                        button2 = (RadioButton) findViewById(R.id.radio5000);
+//                        break;
+//                    case 10000:
+//                        button2 = (RadioButton) findViewById(R.id.radio10000);
+//                        break;
+//                    case 15000:
+//                        button2 = (RadioButton) findViewById(R.id.radio15000);
+//                        break;
+//                    default:
+//                        button2 = (RadioButton) findViewById(R.id.radio10000);
+//                        break;
+//                }
+//                    button2.setChecked(true);
 
-                button2.setChecked(true);
             } else {
                 //10000 by default
-                RadioButton button2 = (RadioButton) findViewById(R.id.radio10000);
-                button2.setChecked(true);
+                RadioButton button3 = (RadioButton) findViewById(R.id.radio10000);
+                button3.setChecked(true);
             }
         }
     }
@@ -242,6 +228,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         TextView txtUsername = (TextView) findViewById(R.id.txtUsername);
         TextView txtHeight = (TextView) findViewById(R.id.txtHeight);
         TextView txtWeight = (TextView) findViewById(R.id.txtWeight);
+        TextView txtBirthDate = (TextView) findViewById(R.id.txtBirthDate);
 
         RadioGroup groupGender = (RadioGroup) findViewById(R.id.radiogroupGender);
         RadioButton btnGender = (RadioButton) findViewById(groupGender.getCheckedRadioButtonId());
@@ -255,7 +242,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
 //        ArrayList<String> locations = userLocations;
 //        locations.add("13.45|11.46");
 
-        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations, Integer.parseInt(btnSteps.getText().toString()));
+        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations, Integer.parseInt(btnSteps.getText().toString()), (HashMap<String, Double>) userCalories, txtBirthDate.getText().toString());
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
 

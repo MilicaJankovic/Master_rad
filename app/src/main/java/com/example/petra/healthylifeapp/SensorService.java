@@ -23,6 +23,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -52,6 +53,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.lang.reflect.Array;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -75,15 +77,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
     private ArrayList<String> userLocations;
+    private HashMap<String, Double> userCalories;
     private String PreviousLat = "";
     private String PreviousLon = "";
-//    private Timestamp timeStill = null;
+    //    private Timestamp timeStill = null;
 //    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
     private Timer timerActivity;
     private TimerTask timerTaskActivity;
     private Boolean locationReset;
+
+    private Boolean vehicleNotification;
 
     public SensorService(Context applicationContext) {
         super();
@@ -120,7 +125,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
-
+                        FirebaseUtility.getUserCalories(dataSnapshot);
                         //region Code for using fences
 //                        String userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeStill");
 
@@ -157,6 +162,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             registerReceiver(receiver, screenStateFilter);
 
             locationReset = false;
+            vehicleNotification = false;
         }
     }
 
@@ -183,8 +189,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         int hour = countHourOfTheDay();
         //if time is between 00:00 and 01:00 set shared pref to false so notification will be fired tomorow again
-        if(hour >= 24 && hour <= 1)
-        {
+        if (hour >= 24 && hour <= 1) {
             SetSharedPreference(false);
         }
 
@@ -192,14 +197,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(1)); //
     }
 
-    private void SetSharedPreference(Boolean value)
-    {
+    private void SetSharedPreference(Boolean value) {
         SharedPreferences.Editor editor = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE).edit();
         editor.putBoolean("FiredToday", value);
         editor.apply();
     }
 
-    public void startTimerActiviy(){
+    public void startTimerActiviy() {
         timerActivity = new Timer();
         initializeTimerTaskActivity();
         timer.schedule(timerTaskActivity, 30000, 30000); //
@@ -213,16 +217,35 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             public void run() {
                 Log.i("in timer", "in timer ++++  " + (counter++));
                 int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY); //Current hour
+                int currentMinute = Calendar.getInstance().get(Calendar.MINUTE); //Current minute
 
-                if(currentHour == 24 && !locationReset)
-                {
+                if (currentHour == 24 && !locationReset) {
                     FirebaseUtility.ResetUserLocations();
-                    locationReset = true;
                 }
-                if(currentHour != 24 && locationReset)
-                {
+                if (currentHour != 24 && locationReset) {
                     locationReset = false;
                 }
+
+
+                if(currentHour == 23 && currentMinute == 55) {
+
+                    //region AddCalories for todays date to database
+
+                    SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
+                    if(prefs != null) {
+                        Long stepsCount = prefs.getLong("StepsCount", 0);
+
+                        if (stepsCount != null && stepsCount > 0) {
+                            CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
+                            //Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+                            String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+                            FirebaseUtility.saveUserCaolries(date, calculator.CalculateCaloriesBurnedBySteps(), userCalories);
+                        }
+                    }
+                    //endregion
+                }
+
+                locationReset = true;
 
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
@@ -292,8 +315,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
     }
 
-    private int countHourOfTheDay()
-    {
+    private int countHourOfTheDay() {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Date());
         return cal.get(Calendar.HOUR_OF_DAY);
@@ -392,26 +414,29 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
 
-                                if (weatherCondition != -1) {
-                                    switch (weatherCondition) {
-                                        case Weather.CONDITION_CLOUDY:
-                                            CreateNotification("It's cloudy! It's good you are in vehicle!");
-                                            break;
-                                        case Weather.CONDITION_CLEAR:
-                                            CreateNotification("It's clear outside! You should be walking instead!");
-                                            break;
-                                        case Weather.CONDITION_FOGGY:
-                                            CreateNotification("It's foggy outside! Drive carefully!");
-                                            break;
-                                        case Weather.CONDITION_RAINY:
-                                            CreateNotification("It's rainy! It's good you are in vehicle!");
-                                            break;
-                                        case Weather.CONDITION_SNOWY:
-                                            CreateNotification("It's snowy outside! Drive carefully!");
-                                            break;
-                                        case Weather.CONDITION_ICY:
-                                            CreateNotification("It's icy outside! Drive slow!");
-                                            break;
+                                if (vehicleNotification == false) {
+                                    vehicleNotification = true;
+                                    if (weatherCondition != -1) {
+                                        switch (weatherCondition) {
+                                            case Weather.CONDITION_CLOUDY:
+                                                CreateNotification("It's cloudy! It's good you are in vehicle!");
+                                                break;
+                                            case Weather.CONDITION_CLEAR:
+                                                CreateNotification("It's clear outside! You should be walking instead!");
+                                                break;
+                                            case Weather.CONDITION_FOGGY:
+                                                CreateNotification("It's foggy outside! Drive carefully!");
+                                                break;
+                                            case Weather.CONDITION_RAINY:
+                                                CreateNotification("It's rainy! It's good you are in vehicle!");
+                                                break;
+                                            case Weather.CONDITION_SNOWY:
+                                                CreateNotification("It's snowy outside! Drive carefully!");
+                                                break;
+                                            case Weather.CONDITION_ICY:
+                                                CreateNotification("It's icy outside! Drive slow!");
+                                                break;
+                                        }
                                     }
                                 } else {
                                     CreateNotification("You are in vehicle? Play some good music and drive carefully!");
@@ -423,15 +448,24 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 break;
                             }
                             case DetectedActivity.ON_FOOT: {
+                                vehicleNotification = false;
                                 Log.e("ActivityRecognition", "On Foot: " + probableActivity.getConfidence());
+                                if (probableActivity.getConfidence() >= 75) {
+                                    TimeStill = 0;
+                                }
                                 break;
                             }
                             case DetectedActivity.RUNNING: {
                                 Log.e("ActivityRecognition", "Running: " + probableActivity.getConfidence());
+                                if (probableActivity.getConfidence() >= 75) {
+                                    TimeStill = 0;
+                                }
                                 break;
                             }
                             case DetectedActivity.STILL: {
                                 Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
+
+                                vehicleNotification = false;
 
                                 if (probableActivity.getConfidence() >= 75) {
                                     TimeStill++;
@@ -444,7 +478,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                                     int hourOfTheDay = countHourOfTheDay();
                                     //send notification if it's not in the middle of the night when sleeping
-                                    if(hourOfTheDay<= 22 && hourOfTheDay >=9) {
+                                    if (hourOfTheDay <= 22 && hourOfTheDay >= 9) {
                                         CreateNotification("You are sitting for too long!");
                                     }
                                     TimeStill = 0;
@@ -456,6 +490,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 break;
                             }
                             case DetectedActivity.WALKING: {
+                                vehicleNotification = false;
+
                                 Log.e("ActivityRecognition", "Walking: " + probableActivity.getConfidence());
                                 if (probableActivity.getConfidence() >= 75) {
                                     TimeWalking++;
@@ -506,9 +542,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                Log.i("Check","Screen went OFF");
+                Log.i("Check", "Screen went OFF");
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-                Log.i("Check","Screen went ON");
+                Log.i("Check", "Screen went ON");
             }
         }
     }
