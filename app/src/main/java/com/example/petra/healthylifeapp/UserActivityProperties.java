@@ -157,3 +157,4 @@ public class UserActivityProperties {
 //napraviti f-ju za poziv metoda za skladistenje podataka
 //update kolona u tabeli
 //napraviti f-ju za racunanje faktora
+//resetovati checkboxeve u 12 sati i shared preferences

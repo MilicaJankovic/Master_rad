@@ -5,12 +5,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.petra.healthylifeapp.MainActivity">
+    <RelativeLayout
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/activity_linear_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_width="368dp"
+        android:layout_height="0dp"
+        android:paddingBottom="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="10dp"
+        tools:layout_editor_absoluteX="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/layout_steps"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+
+            tools:layout_editor_absoluteX="8dp"
+            tools:layout_editor_absoluteY="8dp">
 
         <TextView
             android:id="@+id/title_text_view"
@@ -24,32 +39,193 @@
             tools:layout_editor_absoluteY="0dp"
             tools:layout_editor_absoluteX="8dp" />
 
+
+
         <Button
             android:id="@+id/button_viewHistory"
-            android:layout_height="wrap_content"
-            android:layout_width="140dp"
+            android:layout_height="match_parent"
+            android:layout_width="130dp"
             android:text="@string/buttonHistoryText"/>
         <Button
             android:id="@+id/button_showCalendar"
+            android:layout_height="match_parent"
+            android:layout_width="130dp"
+            android:text="@string/button_showcalendar_text" />
+        </LinearLayout>
+
+<LinearLayout
+    android:id="@+id/layout_exs_left"
+    android:layout_width="match_parent"
+    android:layout_height="180dp"
+    android:layout_below="@id/layout_steps"
+    android:orientation="vertical">
+
+
+
+        <LinearLayout
+            android:id="@+id/layout_exs1"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+
+            tools:layout_editor_absoluteX="8dp"
+            tools:layout_editor_absoluteY="8dp">
+
+            <TextView
+                android:id="@+id/text_view_squat"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Squats 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp"
+                android:layout_alignParentLeft="true"/>
+
+            <CheckBox
+                android:id="@+id/rbtn_squat"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="" />
+
+            <TextView
+                android:id="@+id/text_view_burpees"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Burpees 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp"
+                android:layout_alignParentRight="true" />
+
+            <CheckBox
+                android:id="@+id/rbtn_burpees"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="" />
+
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/layout_exs2"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@id/layout_exs1"
+            tools:layout_editor_absoluteX="8dp"
+            tools:layout_editor_absoluteY="8dp">
+
+            <TextView
+                android:id="@+id/text_view_jumpingjack"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Jumping Jack 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp" />
+        <CheckBox
+            android:id="@+id/rbtn_jumping"
+            android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:layout_width="140dp"
-            android:text="@string/button_showcalendar_text"/>
+            android:text="" />
 
+            <TextView
+                android:id="@+id/text_view_pushups"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Pushups 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp"
+                android:layout_alignParentRight="true" />
 
+            <CheckBox
+                android:id="@+id/rbtn_pushups"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_exs3"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@id/layout_exs2"
+            tools:layout_editor_absoluteX="8dp"
+            tools:layout_editor_absoluteY="8dp">
+            <TextView
+                android:id="@+id/text_view_mountain"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Mountain climbers 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp" />
+        <CheckBox
+            android:id="@+id/rbtn_mountain"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+            <TextView
+                android:id="@+id/text_view_situps"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:text="Situps 1min"
+                android:textSize="15dp"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:gravity="center"
+                tools:layout_editor_absoluteY="0dp"
+                tools:layout_editor_absoluteX="8dp"
+                android:layout_alignParentRight="true" />
+
+            <CheckBox
+                android:id="@+id/rbtn_situps"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="" />
+        </LinearLayout>
+
+</LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout_editor_absoluteY="8dp"
+        tools:layout_editor_absoluteX="8dp"
+        android:layout_below="@id/layout_exs_left" >
+
+            <EditText
+                android:id="@+id/txtWeather"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:ems="10"
+                android:inputType="textMultiLine"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                tools:layout_editor_absoluteX="85dp" />
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/txtWeather"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:ems="10"
-        android:inputType="textMultiLine"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
 
+
+</RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>

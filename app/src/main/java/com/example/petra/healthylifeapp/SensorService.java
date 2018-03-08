@@ -221,8 +221,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                 if (currentHour == 24 && !locationReset) {
                     FirebaseUtility.ResetUserLocations();
+                    MainActivity.calculator.ResetSharedPreferences();
+                    locationReset = true;
                 }
-                if (currentHour != 24 && locationReset) {
+                if(currentHour != 24 && locationReset)
+                {
                     locationReset = false;
                 }
 
@@ -236,10 +239,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         Long stepsCount = prefs.getLong("StepsCount", 0);
 
                         if (stepsCount != null && stepsCount > 0) {
-                            CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
+                            //CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
                             //Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
                             String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
-                            FirebaseUtility.saveUserCaolries(date, calculator.CalculateCaloriesBurnedBySteps(), userCalories);
+                            FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
                         }
                     }
                     //endregion

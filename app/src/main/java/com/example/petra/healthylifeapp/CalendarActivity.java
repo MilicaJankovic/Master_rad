@@ -34,7 +34,7 @@ public class CalendarActivity extends AppCompatActivity {
         if(finalValue != "")
         {
             TextView textviewDate = (TextView) findViewById(R.id.date);
-            CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(finalValue));
+            CaloriesCalculator calculator = new CaloriesCalculator(this, 90, 184 /*, Double.valueOf(finalValue)*/);
             textviewDate.setText(String.valueOf(calculator.CalculateCaloriesBurnedBySteps()));
         }
         mCalendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {

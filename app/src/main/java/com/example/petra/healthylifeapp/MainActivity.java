@@ -12,6 +12,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringDef;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
@@ -24,6 +25,8 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -64,6 +67,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
@@ -75,6 +79,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private static final String AUTH_PENDING = "auth_state_pending";
     private static final int REQUEST_OAUTH_REQUEST_CODE = 0x1001;
     private final static int REQUEST_PERMISSION_RESULT_CODE = 42;
+
+    public static final String ExerciseTag = "Exercise";
     public static MainActivity instance;
     public GoogleApiClient mApiClient;
     LocationRequest mLocationRequest;
@@ -100,6 +106,18 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     public Context getCtx() {
         return ctx;
     }
+
+    CheckBox squats;
+    CheckBox jumping;
+    CheckBox climbers;
+    CheckBox burpees;
+    CheckBox pushups;
+    CheckBox situps;
+    String userWeight;
+    String userHeight;
+    private boolean numberOfExercisesSet = false;
+
+    public static CaloriesCalculator calculator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -192,6 +210,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                         //getUserLocations(dataSnapshot);
 
                         String steps = FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal");
+                        userWeight = FirebaseUtility.getUserProperty(dataSnapshot, "weight");
+                        userHeight = FirebaseUtility.getUserProperty(dataSnapshot, "height");
+
+
                         if(!steps.equals(""))
                         {
                             StepsGoal = Integer.parseInt(steps);
@@ -214,10 +236,36 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
         buttonCalendar.setOnClickListener(this);
 
+        squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        squats.setOnClickListener(this);
+
+        jumping = (CheckBox)findViewById(R.id.rbtn_jumping);
+        jumping.setOnClickListener(this);
+
+        climbers = (CheckBox)findViewById(R.id.rbtn_mountain);
+        climbers.setOnClickListener(this);
+
+        burpees = (CheckBox)findViewById(R.id.rbtn_burpees);
+        burpees.setOnClickListener(this);
+
+        pushups = (CheckBox)findViewById(R.id.rbtn_pushups);
+        pushups.setOnClickListener(this);
+
+        situps = (CheckBox)findViewById(R.id.rbtn_situps);
+        situps.setOnClickListener(this);
+
+
 
         SetSharedPreference(false);
-    }
 
+
+
+//        if(!numberOfExercisesSet) {
+//            SetNumberOfExercises();
+//            numberOfExercisesSet = true;
+//        }
+
+    }
 
     private void SetSharedPreference(Boolean value)
     {
@@ -307,6 +355,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         if (!isMyServiceRunning(mSensorService.getClass())) {
             startService(mServiceIntent);
         }
+
+        calculator = new CaloriesCalculator(this, Double.valueOf(userWeight), Double.valueOf(userHeight));
+        InitializeCheckBoxes();
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -358,8 +409,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                     txtWeather.append("It's icy! Carefull ride!");
                                     break;
                             }
-
+                            txtWeather.append("Calories: " + String.valueOf(calculator.CalculateCaloriesBurnedByDoingExercises()));
                         }
+
                     }
                 });
     }
@@ -527,7 +579,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                                 : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
                                 //   Log.i(TAG, "Total steps: " + total);
                                 ShowNumberOfSteps(String.valueOf(total));
-
+                                calculator.SetNumberOfSteps(total);
                                 //notificationCounter is here to provide sending notfication for this event only once
                                 SharedPreferences prefs = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE);
                                 Boolean firedToday = prefs.getBoolean("FiredToday", false);
@@ -649,5 +701,123 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         } else if (i == R.id.button_viewHistory) {
             OpenHistoryActivity();
         }
+        else if (i == R.id.rbtn_squat) {
+         //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(squats.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, false);
+            }
+        }
+        else if (i == R.id.rbtn_jumping) {
+            //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(jumping.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, false);
+            }
+        }
+        else if (i == R.id.rbtn_mountain) {
+            //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(climbers.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, false);
+            }
+        }
+        else if (i == R.id.rbtn_burpees) {
+            //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(burpees.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, false);
+            }
+        }
+        else if (i == R.id.rbtn_pushups) {
+            //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(pushups.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, false);
+            }
+        }
+        else if (i == R.id.rbtn_situps) {
+            //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+            if(situps.isChecked()) {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, true);
+            }
+            else
+            {
+                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, false);
+            }
+        }
+
+
+    }
+//    public void SetNumberOfExercises()
+//    {
+//        SharedPreferences.Editor editor = getSharedPreferences(ExerciseTag, MODE_PRIVATE).edit();
+//        editor.putInt(CaloriesCalculator.numberExcercises, CaloriesCalculator.numberOfExercises);
+//        editor.apply();
+//    }
+//    public int GetNumberOfExercises()
+//    {
+//        SharedPreferences pref = getSharedPreferences(ExerciseTag, Context.MODE_PRIVATE);
+//        int value = pref.getInt(CaloriesCalculator.numberExcercises, 0);
+//        return value;
+//    }
+//
+//    public void SetSharedPreferencesForExcersise(String name, Boolean value)
+//    {
+//        SharedPreferences.Editor editor = getSharedPreferences(ExerciseTag, MODE_PRIVATE).edit();
+//        editor.putBoolean(name, value);
+//        editor.apply();
+//    }
+//    public boolean GetSharedPreferencesForExercise(String name)
+//    {
+//        SharedPreferences pref = getSharedPreferences(ExerciseTag, Context.MODE_PRIVATE);
+//        boolean value = pref.getBoolean(name, false);
+//        return value;
+//    }
+
+    private void InitializeCheckBoxes()
+    {
+
+        boolean checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.squats);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        squats.setChecked(checked);
+
+        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.jumpingJack);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        jumping.setChecked(checked);
+
+        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.mountainClimbers);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        climbers.setChecked(checked);
+
+        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.burpees);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        burpees.setChecked(checked);
+
+        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.pushups);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        pushups.setChecked(checked);
+
+        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.situps);
+        //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
+        situps.setChecked(checked);
+
+
+
     }
 }
