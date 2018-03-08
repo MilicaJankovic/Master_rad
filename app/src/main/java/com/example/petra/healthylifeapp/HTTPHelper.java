@@ -47,15 +47,19 @@ public class HTTPHelper {
             jsonObject = new JSONObject();
 
             jsonObject.put("Gender", property.getGender());
-            jsonObject.put("BirthDate", property.getBirthDate());
+            jsonObject.put("Age", property.getAge());
             jsonObject.put("StepsNum", property.getStepsNum());
-            jsonObject.put("Running", property.getRunning());
             jsonObject.put("Still", property.getStill());
+            jsonObject.put("ContinuousStill", property.getContinuousStill());
+            jsonObject.put("Running", property.getRunning());
             jsonObject.put("Driving", property.getDriving());
+            jsonObject.put("Cycling", property.getCycling());
             jsonObject.put("Sleeping", property.getSleeping());
             jsonObject.put("Weather", property.getWeather());
-            jsonObject.put("LookingGoal", property.getLookingGoals());
-            jsonObject.put("Factor", property.getFactor());
+            jsonObject.put("TargetWeight", property.getTargetWeight());
+            jsonObject.put("DayOfTheWeek", property.getDayOfTheWeek());
+            jsonObject.put("PartOfTheWeek", property.getPartOfTheDay());
+            jsonObject.put("UserInput", property.getUserInput());
 
             Uri.Builder builder = new Uri.Builder()
                     .appendQueryParameter("property", jsonObject.toString());
@@ -102,15 +106,20 @@ public class HTTPHelper {
             for(int i = 0; i<properties.size(); i++) {
                 jsonObject = new JSONObject();
                 jsonObject.put("Gender", properties.get(i).getGender());
-                jsonObject.put("BirthDate", properties.get(i).getBirthDate());
+                jsonObject.put("Age", properties.get(i).getAge());
                 jsonObject.put("StepsNum", properties.get(i).getStepsNum());
-                jsonObject.put("Running", properties.get(i).getRunning());
                 jsonObject.put("Still", properties.get(i).getStill());
+                jsonObject.put("ContinuousStill", properties.get(i).getContinuousStill());
+                jsonObject.put("Running", properties.get(i).getRunning());
                 jsonObject.put("Driving", properties.get(i).getDriving());
+                jsonObject.put("Cycling", properties.get(i).getCycling());
                 jsonObject.put("Sleeping", properties.get(i).getSleeping());
                 jsonObject.put("Weather", properties.get(i).getWeather());
-                jsonObject.put("LookingGoal", properties.get(i).getLookingGoals());
-                jsonObject.put("Factor", properties.get(i).getFactor());
+                jsonObject.put("TargetWeight", properties.get(i).getTargetWeight());
+                jsonObject.put("Calories", properties.get(i).getCalories());
+                jsonObject.put("DayOfTheWeek", properties.get(i).getDayOfTheWeek());
+                jsonObject.put("PartOfTheDay", properties.get(i).getPartOfTheDay());
+                jsonObject.put("UserInput", properties.get(i).getUserInput());
                 jsonArray.put(jsonObject);
             }
             Uri.Builder builder = new Uri.Builder()
@@ -164,19 +173,21 @@ public class HTTPHelper {
                     for (int i = 0; i < jsonArray.length(); i++) {
                         UserActivityProperties property = new UserActivityProperties();
                         JSONObject jsonObject = jsonArray.getJSONObject(i);
-                        property.setGender(jsonObject.getInt("Gender"));
-                        String dateStr = jsonObject.getString("BirthDate");
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        Date birthDate = sdf.parse(dateStr);
-                        property.setBirthDate(birthDate);
+                        property.setGender(jsonObject.getString("Gender"));
+                        property.setAge(jsonObject.getInt("Age"));
                         property.setStepsNum(jsonObject.getInt("StepsNum"));
-                        property.setRunning(jsonObject.getInt("Running"));
                         property.setStill(jsonObject.getInt("Still"));
+                        property.setContinuousStill(jsonObject.getInt("ContinuousStill"));
+                        property.setRunning(jsonObject.getInt("Running"));
                         property.setDriving(jsonObject.getInt("Driving"));
+                        property.setCycling(jsonObject.getInt("Cycling"));
                         property.setSleeping(jsonObject.getInt("Sleeping"));
-                        property.setWeather(jsonObject.getInt("Weather"));
-                        property.setLookingGoals(jsonObject.getInt("LookingGoal"));
-                        property.setFactor(jsonObject.getInt("Factor"));
+                        property.setWeather(jsonObject.getString("Weather"));
+                        property.setTargetWeight(jsonObject.getInt("TargetWeight"));
+                        property.setCalories(jsonObject.getInt("Calories"));
+                        property.setDayOfTheWeek(jsonObject.getInt("DayOfTheWeek"));
+                        property.setPartOfTheDay(jsonObject.getString("PartOfTheDay"));
+                        property.setUserInput(jsonObject.getInt("UserInput"));
 
 
                         properties.add(property);

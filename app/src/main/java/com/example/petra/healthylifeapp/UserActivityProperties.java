@@ -9,45 +9,43 @@ import java.util.Date;
 
 public class UserActivityProperties {
 
-    private int Gender;
-    private Date BirthDate;
+    private String Gender;
+    private int Age;
     private int StepsNum;
-    private int Running;
     private int Still;
+    private int ContinuousStill;
+    private int Running;
     private int Driving;
+    private int Cycling;
     private int Sleeping;
-    private int Weather;
-    private int LookingGoals;
-    private int Factor;
+    private String Weather;
+    private int TargetWeight;
+    private int Calories;
+    private int DayOfTheWeek;
+    private String PartOfTheDay;
+    private int UserInput;
+
 
     public UserActivityProperties()
     {
-        setGender(0);
-        setBirthDate(null);/********!!!!!!!!!!!!!********/
+        setGender("");
+        setAge(0);
         setStepsNum(0);
-        setRunning(0);
         setStill(0);
+        setContinuousStill(0);
+        setRunning(0);
         setDriving(0);
+        setCycling(0);
         setSleeping(0);
-        setWeather(0);
-        setLookingGoals(0);
-        setFactor(0);
-    }
-    public int getGender() {
-        return Gender;
+        setWeather("");
+        setTargetWeight(0);
+        setCalories(0);
+        setDayOfTheWeek(0);
+        setPartOfTheDay("");
+        setUserInput(0);
+
     }
 
-    public void setGender(int gender) {
-        Gender = gender;
-    }
-
-    public Date getBirthDate() {
-        return BirthDate;
-    }
-
-    public void setBirthDate(Date birthDate) {
-        BirthDate = birthDate;
-    }
 
     public int getStepsNum() {
         return StepsNum;
@@ -89,66 +87,128 @@ public class UserActivityProperties {
         Sleeping = sleeping;
     }
 
-    public int getWeather() {
-        return Weather;
-    }
 
-    public void setWeather(int weather) {
-        Weather = weather;
-    }
-
-    public int getLookingGoals() {
-        return LookingGoals;
-    }
-
-    public void setLookingGoals(int lookingGoals) {
-        LookingGoals = lookingGoals;
-    }
-
-    public int getFactor() {
-        return Factor;
-    }
-
-    public void setFactor(int factor) {
-        Factor = factor;
-    }
-
-    public UserActivityProperties SetProperties(int gender, Date date, int steps, int still, int running, int driving, int sleeping, int weather, int looking)
+    public UserActivityProperties SetProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part, int input)
     {
         UserActivityProperties properties = new UserActivityProperties();
 
 
         properties.setGender(gender);
-        properties.setBirthDate(date);
+        properties.setAge(age);
         properties.setStepsNum(steps);
-        properties.setRunning(running);
         properties.setStill(still);
+        properties.setContinuousStill(contStill);
+        properties.setRunning(running);
         properties.setDriving(driving);
+        properties.setCycling(cycling);
         properties.setSleeping(sleeping);
         properties.setWeather(weather);
-        properties.setLookingGoals(looking);
-        properties.setFactor(CalculateFactor(properties));
+        properties.setTargetWeight(target);
+        properties.setDayOfTheWeek(day);
+        properties.setPartOfTheDay(part);
+        properties.setUserInput(input);
+
 
         return properties;
     }
 
-    public int CalculateFactor(UserActivityProperties properties)
-    {
-        return 0;
-    }
-
-    public UserActivityProperties(int gender, Date date, int steps, int still, int running, int driving, int sleeping, int weather, int looking, int factor)
+    public UserActivityProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part, int input)
     {
         setGender(gender);
-        setBirthDate(date);
+        setAge(age);
         setStepsNum(steps);
-        setRunning(running);
         setStill(still);
+        setContinuousStill(contStill);
+        setRunning(running);
         setDriving(driving);
+        setCycling(cycling);
         setSleeping(sleeping);
         setWeather(weather);
-        setLookingGoals(looking);
-        setFactor(factor);
+        setTargetWeight(target);
+        setDayOfTheWeek(day);
+        setPartOfTheDay(part);
+        setUserInput(input);
+    }
+
+    public int getAge() {
+        return Age;
+    }
+
+    public void setAge(int age) {
+        Age = age;
+    }
+
+    public int getContinuousStill() {
+        return ContinuousStill;
+    }
+
+    public void setContinuousStill(int continuousStill) {
+        ContinuousStill = continuousStill;
+    }
+
+    public int getCycling() {
+        return Cycling;
+    }
+
+    public void setCycling(int cycling) {
+        Cycling = cycling;
+    }
+
+    public int getTargetWeight() {
+        return TargetWeight;
+    }
+
+    public void setTargetWeight(int targetWeight) {
+        TargetWeight = targetWeight;
+    }
+
+    public int getCalories() {
+        return Calories;
+    }
+
+    public void setCalories(int calories) {
+        Calories = calories;
+    }
+
+    public int getDayOfTheWeek() {
+        return DayOfTheWeek;
+    }
+
+    public void setDayOfTheWeek(int dayOfTheWeek) {
+        DayOfTheWeek = dayOfTheWeek;
+    }
+
+
+    public int getUserInput() {
+        return UserInput;
+    }
+
+    public void setUserInput(int userInput) {
+        UserInput = userInput;
+    }
+
+    public String getWeather() {
+        return Weather;
+    }
+
+    public void setWeather(String weather) {
+        Weather = weather;
+    }
+
+    public String getGender() {
+        return Gender;
+    }
+
+    public void setGender(String gender) {
+        Gender = gender;
+    }
+
+    public String getPartOfTheDay() {
+        return PartOfTheDay;
+    }
+
+    public void setPartOfTheDay(String partOfTheDay) {
+        PartOfTheDay = partOfTheDay;
     }
 }
 
