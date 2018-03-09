@@ -29,16 +29,14 @@ public class User {
     public String achivement;
     public HashMap<String, Double> calories;
     public String birthDate;
-
-    //public Timestamp timeStill;
-    //public Timestamp timeWalking;
+    public long sleep;
 
 
     public User() {
         // Default constructor required for calls to DataSnapshot.getValue(com.example.petra.healthylifeapp.User.class)
     }
 
-    public User(String username, String email, String gender, Double height, Double weight, String achivement, ArrayList<String> loc, int stepsGoal, HashMap calories, String birthDate) {
+    public User(String username, String email, String gender, Double height, Double weight, String achivement, ArrayList<String> loc, int stepsGoal, HashMap calories, String birthDate, Long sleep) {
         this.username = username;
         this.email = email;
         this.gender = gender;
@@ -49,8 +47,7 @@ public class User {
         this.stepsGoal = stepsGoal;
         this.calories = (HashMap<String, Double>) calories;
         this.birthDate = birthDate;
-//        this.timeStill = null;
-//        this.timeWalking = null;
+        this.sleep = sleep;
     }
 
 
@@ -137,21 +134,11 @@ public class User {
     }
 
 
-//    public Timestamp getTimeStill() {
-//        return timeStill;
-//    }
-//
-//    public void setTimeStill(Timestamp timeStill) {
-//        this.timeStill = timeStill;
-//    }
-//
-//    public Timestamp getTimeWalking() {
-//        return timeWalking;
-//    }
-//
-//    public void setTimeWalking(Timestamp timeWalking) {
-//        this.timeWalking = timeWalking;
-//    }
+    public long getSleep() {
+        return sleep;
+    }
 
-
+    public void setSleep(long sleep) {
+        this.sleep = sleep;
+    }
 }

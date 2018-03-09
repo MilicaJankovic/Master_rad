@@ -31,7 +31,7 @@
 
         <service
             android:name=".SensorService"
-            android:enabled="true" >
+            android:enabled="true">
         </service>
 
         <!--<receiver-->
@@ -43,6 +43,13 @@
                 <!--<action android:name="uk.ac.shef.oak.ActivityRecognition.RestartSensor"/>-->
             <!--</intent-filter>-->
         <!--</receiver>-->
+
+        <receiver android:name=".SensorService$MyBroadCastReciever">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_ON"/>
+                <action android:name="android.intent.action.SCREEN_OFF"/>
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

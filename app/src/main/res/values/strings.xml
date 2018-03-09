@@ -42,4 +42,7 @@
     <string name="title_activity_configure_profile">ConfigureProfile</string>
 
     <string name="button_showcalendar_text">Calendar</string>
+
+    <string name="snooze">Snooze</string>
+    <string name="accept_action">Accept</string>
 </resources>

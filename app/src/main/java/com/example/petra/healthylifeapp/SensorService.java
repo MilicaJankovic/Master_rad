@@ -5,6 +5,8 @@ package com.example.petra.healthylifeapp;
  */
 
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,6 +14,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -26,6 +32,7 @@ import android.support.v7.app.NotificationCompat;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
@@ -68,11 +75,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public static final String TAG = "StepCounter";
     public int counter = 0;
     public GoogleApiClient mApiClient;
-    //counters
-    public int TimeStill = 0;
-    public int TimeWalking = 0;
-    public int UserSleepTime = 0;
-    long oldTime = 0;
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
@@ -80,13 +82,30 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private HashMap<String, Double> userCalories;
     private String PreviousLat = "";
     private String PreviousLon = "";
-    //    private Timestamp timeStill = null;
-//    private Timestamp timeWalking = null;
     private Timer timer;
     private TimerTask timerTask;
     private Timer timerActivity;
     private TimerTask timerTaskActivity;
     private Boolean locationReset;
+
+    //region UserProperties for database
+    public int TimeStill = 0;
+    public int TimeWalking = 0;
+    public long userSleepTime = 0;
+    private int userAge = 0;
+    //it needs to be double, because it adds 0.5 minutes all the time
+    //in the end we will cast it to int
+    private double todayStill = 0;
+    private Date userSleepTimeStarted = null;
+    private Date userSleepTimeEnded = null;
+    //endregion
+
+    private static final String SNOOZE_ACTION = "Snooze";
+    private static final String ACCEPT_ACTION = "Accept";
+
+    private SensorManager mSensorManager;
+    private Sensor mLightSensor;
+    private float mLightQuantity;
 
     private Boolean vehicleNotification;
 
@@ -125,21 +144,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
-                        FirebaseUtility.getUserCalories(dataSnapshot);
-                        //region Code for using fences
-//                        String userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeStill");
-
-//                        if (!userprop.equals("")) {
-//                            timeStill = Timestamp.valueOf(userprop);
-//                        }
-//
-//                        userprop = FirebaseUtility.getUserProperty(dataSnapshot, "timeWalking");
-//
-//                        if (!userprop.equals("")) {
-//                            timeWalking = Timestamp.valueOf(userprop);
-//                        }
-                        //endregion
-
+                        userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
+                        userAge = FirebaseUtility.CalculateAge(dataSnapshot);
                     }
 
                     @Override
@@ -164,6 +170,33 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             locationReset = false;
             vehicleNotification = false;
         }
+
+        SetLightSensor();
+    }
+
+
+    protected void SetLightSensor() {
+        // Obtain references to the SensorManager and the Light Sensor
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        mLightSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+
+        // Implement a listener to receive updates
+        SensorEventListener listener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                mLightQuantity = event.values[0];
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+
+        // Register the listener with the light sensor -- choosing
+        // one of the SensorManager.SENSOR_DELAY_* constants.
+        mSensorManager.registerListener(
+                listener, mLightSensor, SensorManager.SENSOR_DELAY_UI);
     }
 
     @Override
@@ -223,19 +256,21 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     FirebaseUtility.ResetUserLocations();
                     MainActivity.calculator.ResetSharedPreferences();
                     locationReset = true;
+
+                    //reset today still
+                    todayStill = 0;
                 }
-                if(currentHour != 24 && locationReset)
-                {
+                if (currentHour != 24 && locationReset) {
                     locationReset = false;
                 }
 
 
-                if(currentHour == 23 && currentMinute == 55) {
+                if (currentHour == 23 && currentMinute == 55) {
 
                     //region AddCalories for todays date to database
 
                     SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
-                    if(prefs != null) {
+                    if (prefs != null) {
                         Long stepsCount = prefs.getLong("StepsCount", 0);
 
                         if (stepsCount != null && stepsCount > 0) {
@@ -324,50 +359,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return cal.get(Calendar.HOUR_OF_DAY);
     }
 
-    //an old function... this is with using fences (fences fire only when some change happens.. and not always)
-    //checking the timestamp when user registerd to be Still
-    private void CheckUserActivity() {
-//        Timestamp now = new Timestamp(System.currentTimeMillis());
-//
-//        //make sure that user don't get noifications of still-ness during the night
-//        Calendar cal = Calendar.getInstance();
-//        cal.setTime(new Date());
-//        int hour = cal.get(Calendar.HOUR_OF_DAY);
-//        if (hour <= 22 && hour >= 9)              // Check if hour is not between 22 pm and 9am
-//        {
-//            //check how long it passed until user is still
-//            if (timeStill != null) {
-//                // get time difference in seconds
-//                long milliseconds = now.getTime() - timeStill.getTime();
-//                int seconds = (int) milliseconds / 1000;
-//
-//                // calculate hours minutes and seconds
-//                //int hours = seconds / 3600;
-//                int minutes = (seconds % 3600) / 60;
-//
-//                //that means that you're not getting notification twice
-//                if (minutes > 60 && minutes < 66) {
-//                    CreateNotification("You are sitting for too long! Please take a walk at least 5 minutes!");
-//                }
-//            }
-//        }
-//
-//        //checking if the user is walking more than an hour
-//        if (timeWalking != null) {
-//            long milliseconds = now.getTime() - timeWalking.getTime();
-//            int seconds = (int) milliseconds / 1000;
-//
-//            // calculate hours minutes and seconds
-//            //int hours = seconds / 3600;
-//            int minutes = (seconds % 3600) / 60;
-//
-//            //that means that you're not getting notification twice
-//            if (minutes > 60 && minutes < 66) {
-//                CreateNotification("Well done! You're walking for a quite long time!");
-//            }
-//        }
-    }
-
     private void CreateNotification(String message) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
         builder.setContentText(message);
@@ -377,6 +368,21 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         builder.setSound(alarmSound);
         long[] vibrate = {0, 100};
         builder.setVibrate(vibrate);
+
+//        Intent notificationIntent = new Intent(this, SensorService.class);
+//        notificationIntent.setAction(SNOOZE_ACTION);
+//        builder.addAction(R.mipmap.if_ic_snooze, getString(R.string.snooze), PendingIntent.getActivity(this, 0, notificationIntent,
+//                PendingIntent.FLAG_UPDATE_CURRENT));
+//        NotificationReceiver receiver = new NotificationReceiver();
+//        receiver.onReceive(this, notificationIntent);
+//
+//        Intent notifAccIntent = new Intent(this, SensorService.class);
+//        notificationIntent.setAction(ACCEPT_ACTION);
+//        builder.addAction(R.mipmap.if_accept, getString(R.string.snooze), PendingIntent.getActivity(this, 0, notifAccIntent,
+//                PendingIntent.FLAG_UPDATE_CURRENT));
+//        NotificationReceiver receiver1 = new NotificationReceiver();
+//        receiver1.onReceive(this, notifAccIntent);
+
         NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
     }
 
@@ -441,9 +447,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                                 break;
                                         }
                                     }
-                                } else {
-                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
                                 }
+//                                else {
+//                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+//                                }
                                 break;
                             }
                             case DetectedActivity.ON_BICYCLE: {
@@ -471,6 +478,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 vehicleNotification = false;
 
                                 if (probableActivity.getConfidence() >= 75) {
+                                    //today still is reseting in the midnite, it counts minutes
+                                    todayStill += 0.5;
                                     TimeStill++;
                                     TimeWalking = 0;
                                     Log.e("TimeStill", "Time: " + TimeStill);
@@ -482,7 +491,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     int hourOfTheDay = countHourOfTheDay();
                                     //send notification if it's not in the middle of the night when sleeping
                                     if (hourOfTheDay <= 22 && hourOfTheDay >= 9) {
-                                        CreateNotification("You are sitting for too long!");
+                                        CreateNotification("You are sitting for too long! Please take a walk little bit.");
                                     }
                                     TimeStill = 0;
                                 }
@@ -546,8 +555,44 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 Log.i("Check", "Screen went OFF");
+                if (FirebaseUtility.getPartOfTheDay().equals("Night")) {
+                    if (mLightQuantity < 30.0) {
+                        userSleepTimeStarted = new Date();
+                    }
+                }
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 Log.i("Check", "Screen went ON");
+//                String userage = getString(userAge);
+//                Log.i("Age", userage);
+//                String part = FirebaseUtility.getPartOfTheDay();
+//                Log.i("Time of the day", part);
+
+                // && FirebaseUtility.getPartOfTheDay().equals("Morning")
+                if (userSleepTimeStarted != null && FirebaseUtility.getPartOfTheDay().equals("Morning")) {
+                    userSleepTimeEnded = new Date();
+                    final int MILLI_TO_HOUR = 1000 * 60 * 60;
+                    userSleepTime = (userSleepTimeEnded.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
+                    FirebaseUtility.saveUserProperty(String.valueOf(userSleepTime), "sleep");
+
+                    userSleepTimeEnded = null;
+                    userSleepTimeStarted = null;
+                }
+                Log.i("Light: ", String.valueOf(mLightQuantity));
+            }
+        }
+    }
+
+
+    public class NotificationReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO Auto-generated method stub
+            String action = intent.getAction();
+            if (SNOOZE_ACTION.equals(action)) {
+                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
+            } else if (ACCEPT_ACTION.equals(action)) {
+                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
             }
         }
     }

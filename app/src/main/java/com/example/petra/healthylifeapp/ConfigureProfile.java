@@ -242,7 +242,7 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
 //        ArrayList<String> locations = userLocations;
 //        locations.add("13.45|11.46");
 
-        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations, Integer.parseInt(btnSteps.getText().toString()), (HashMap<String, Double>) userCalories, txtBirthDate.getText().toString());
+        User user = new User(txtUsername.getText().toString(), firebaseUser.getEmail(), btnGender.getText().toString(), Double.parseDouble(txtHeight.getText().toString()), Double.parseDouble(txtWeight.getText().toString()), btnAchivement.getText().toString(), userLocations, Integer.parseInt(btnSteps.getText().toString()), (HashMap<String, Double>) userCalories, txtBirthDate.getText().toString(), 0L);
         mDatabase.child("users").child(firebaseUser.getUid()).setValue(user);
         mDatabase.push();
 
