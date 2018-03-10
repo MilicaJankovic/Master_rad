@@ -5,6 +5,7 @@ package com.example.petra.healthylifeapp;
  */
 
 import android.annotation.SuppressLint;
+import android.app.IntentService;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -323,6 +324,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return null;
     }
 
+
+
     @SuppressLint("MissingPermission")
     public void GetAndStoreCurrentLocation() {
         Log.w("GetLocation", "Getting location started...");
@@ -348,6 +351,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLat = String.format("%.3f", location.getLatitude());
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
+                        CreateNotification("location set");
                     }
                 });
 
@@ -360,6 +364,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
     private void CreateNotification(String message) {
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
         builder.setContentText(message);
         builder.setSmallIcon(R.mipmap.ic_launcher);
@@ -369,19 +374,19 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         long[] vibrate = {0, 100};
         builder.setVibrate(vibrate);
 
-//        Intent notificationIntent = new Intent(this, SensorService.class);
-//        notificationIntent.setAction(SNOOZE_ACTION);
-//        builder.addAction(R.mipmap.if_ic_snooze, getString(R.string.snooze), PendingIntent.getActivity(this, 0, notificationIntent,
-//                PendingIntent.FLAG_UPDATE_CURRENT));
-//        NotificationReceiver receiver = new NotificationReceiver();
-//        receiver.onReceive(this, notificationIntent);
-//
-//        Intent notifAccIntent = new Intent(this, SensorService.class);
-//        notificationIntent.setAction(ACCEPT_ACTION);
-//        builder.addAction(R.mipmap.if_accept, getString(R.string.snooze), PendingIntent.getActivity(this, 0, notifAccIntent,
-//                PendingIntent.FLAG_UPDATE_CURRENT));
-//        NotificationReceiver receiver1 = new NotificationReceiver();
-//        receiver1.onReceive(this, notifAccIntent);
+        Intent notificationIntentSnooze = new Intent(this, SensorService.class);
+        notificationIntentSnooze.setAction(SNOOZE_ACTION);
+        PendingIntent pendingIntentSnooze = PendingIntent.getBroadcast(this, 0, notificationIntentSnooze, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.addAction(R.mipmap.snooze, getString(R.string.snooze), pendingIntentSnooze);
+        NotificationReceiver receiver = new NotificationReceiver();
+        receiver.onReceive(this, notificationIntentSnooze);
+
+        Intent notificationIntentAction = new Intent(this, SensorService.class);
+        notificationIntentAction.setAction(ACCEPT_ACTION);
+        PendingIntent pendingIntentAction = PendingIntent.getBroadcast(this, 0, notificationIntentAction, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.addAction(R.mipmap.accept, getString(R.string.snooze), pendingIntentAction);
+        NotificationReceiver receiver1 = new NotificationReceiver();
+        receiver1.onReceive(this, notificationIntentAction);
 
         NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
     }
