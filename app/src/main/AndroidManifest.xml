@@ -45,10 +45,13 @@
         <!--</receiver>-->
 
         <receiver android:name=".SensorService$MyBroadCastReciever">
-            <intent-filter>
-                <action android:name="android.intent.action.SCREEN_ON"/>
-                <action android:name="android.intent.action.SCREEN_OFF"/>
-            </intent-filter>
+        <intent-filter>
+            <action android:name="android.intent.action.SCREEN_ON"/>
+            <action android:name="android.intent.action.SCREEN_OFF"/>
+        </intent-filter>
+    </receiver>
+
+        <receiver android:name=".SensorService$NotificationReceiver">
         </receiver>
 
         <activity

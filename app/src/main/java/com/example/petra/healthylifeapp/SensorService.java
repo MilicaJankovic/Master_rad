@@ -7,6 +7,7 @@ package com.example.petra.healthylifeapp;
 import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -32,6 +33,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -162,11 +164,12 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             //CheckUserActivity();
             GetCurrentActivity();
 
-            MyBroadCastReciever receiver = new MyBroadCastReciever();
-            IntentFilter screenStateFilter = new IntentFilter();
-            screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
-            screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
-            registerReceiver(receiver, screenStateFilter);
+            //try this in timer task
+//            MyBroadCastReciever receiver = new MyBroadCastReciever();
+//            IntentFilter screenStateFilter = new IntentFilter();
+//            screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
+//            screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+//            registerReceiver(receiver, screenStateFilter);
 
             locationReset = false;
             vehicleNotification = false;
@@ -228,7 +231,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         }
 
         //schedule the timer, to wake up every 60 seconds
-        timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(1)); //
+        timer.schedule(timerTask, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(1));
+
+        MyBroadCastReciever receiver = new MyBroadCastReciever();
+        IntentFilter screenStateFilter = new IntentFilter();
+        screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
+        screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(receiver, screenStateFilter);
     }
 
     private void SetSharedPreference(Boolean value) {
@@ -325,7 +334,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
-
     @SuppressLint("MissingPermission")
     public void GetAndStoreCurrentLocation() {
         Log.w("GetLocation", "Getting location started...");
@@ -351,7 +359,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLat = String.format("%.3f", location.getLatitude());
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
-                        CreateNotification("location set");
+                        //CreateNotification("location set");
+                        //startNotification("Notification with buttons works");
                     }
                 });
 
@@ -363,6 +372,56 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return cal.get(Calendar.HOUR_OF_DAY);
     }
 
+
+    private void startNotification(String notificationMessage) {
+        String ns = Context.NOTIFICATION_SERVICE;
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(ns);
+
+        Notification notification = new Notification(R.mipmap.ic_launcher, null,
+                System.currentTimeMillis());
+
+        RemoteViews notificationView = new RemoteViews(getPackageName(), R.layout.notification);
+        notificationView.setTextViewText(R.id.txtNotificationText, notificationMessage);
+        //the intent that is started when the notification is clicked (works)
+//        Intent notificationIntent = new Intent(this, SensorService.class);
+//        PendingIntent pendingNotificationIntent = PendingIntent.getActivity(this, 0,
+//                notificationIntent, 0);
+
+        if (android.os.Build.VERSION.SDK_INT >= 16) {
+            notification.bigContentView = notificationView;
+        }
+
+        notification.contentView = notificationView;
+
+        //notification.contentIntent = pendingNotificationIntent;
+        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        notification.sound = alarmSound;
+        long[] vibrate = {0, 100};
+        notification.vibrate = vibrate;
+
+        //this is the intent that is supposed to be called when the
+        //button is clicked
+        Intent snoozeIntent = new Intent(this, NotificationReceiver.class);
+        snoozeIntent.setAction(SNOOZE_ACTION);
+        PendingIntent pendingsnoozeIntent = PendingIntent.getBroadcast(this, 0,
+                snoozeIntent, 0);
+        notificationView.setOnClickPendingIntent(R.id.btnSnooze,
+                pendingsnoozeIntent);
+
+        Intent acceptIntent = new Intent(this, NotificationReceiver.class);
+        acceptIntent.setAction(ACCEPT_ACTION);
+        PendingIntent pendingacceptIntent = PendingIntent.getBroadcast(this, 0,
+                acceptIntent, 0);
+        notificationView.setOnClickPendingIntent(R.id.btnAccept,
+                pendingacceptIntent);
+
+
+        notificationManager.notify(1, notification);
+    }
+
+
     private void CreateNotification(String message) {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
@@ -373,20 +432,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         builder.setSound(alarmSound);
         long[] vibrate = {0, 100};
         builder.setVibrate(vibrate);
-
-        Intent notificationIntentSnooze = new Intent(this, SensorService.class);
-        notificationIntentSnooze.setAction(SNOOZE_ACTION);
-        PendingIntent pendingIntentSnooze = PendingIntent.getBroadcast(this, 0, notificationIntentSnooze, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.addAction(R.mipmap.snooze, getString(R.string.snooze), pendingIntentSnooze);
-        NotificationReceiver receiver = new NotificationReceiver();
-        receiver.onReceive(this, notificationIntentSnooze);
-
-        Intent notificationIntentAction = new Intent(this, SensorService.class);
-        notificationIntentAction.setAction(ACCEPT_ACTION);
-        PendingIntent pendingIntentAction = PendingIntent.getBroadcast(this, 0, notificationIntentAction, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.addAction(R.mipmap.accept, getString(R.string.snooze), pendingIntentAction);
-        NotificationReceiver receiver1 = new NotificationReceiver();
-        receiver1.onReceive(this, notificationIntentAction);
 
         NotificationManagerCompat.from(getApplicationContext()).notify(0, builder.build());
     }
@@ -450,13 +495,12 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                             case Weather.CONDITION_ICY:
                                                 CreateNotification("It's icy outside! Drive slow!");
                                                 break;
+                                            default:
+                                                CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+                                                break;
                                         }
                                     }
                                 }
-//                                else {
-//                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
-//                                }
-                                break;
                             }
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
@@ -561,7 +605,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 Log.i("Check", "Screen went OFF");
                 if (FirebaseUtility.getPartOfTheDay().equals("Night")) {
-                    if (mLightQuantity < 30.0) {
+                    if (mLightQuantity < 5.0) {
                         userSleepTimeStarted = new Date();
                     }
                 }
@@ -588,7 +632,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
-    public class NotificationReceiver extends BroadcastReceiver {
+    public static class NotificationReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -601,4 +645,5 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             }
         }
     }
+
 }

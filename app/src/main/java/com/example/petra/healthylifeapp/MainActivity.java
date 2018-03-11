@@ -816,8 +816,5 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.situps);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         situps.setChecked(checked);
-
-
-
     }
 }
