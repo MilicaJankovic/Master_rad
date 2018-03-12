@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -111,10 +112,26 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private float mLightQuantity;
 
     private Boolean vehicleNotification;
+    FeedReaderDbHelper mDbHelper;
 
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
+
+
+
+        mDbHelper = new FeedReaderDbHelper(applicationContext);
+//        UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
+//        Cursor cursor = mDbHelper.ReadDataFromDatabase();
+//        if(cursor.getCount() > 0) {
+//            final List<UserActivityProperties> properties = mDbHelper.GetObjectsFromCursor(cursor);
+//            if (properties != null) {
+//                if(HTTPHelper.setProperties(properties)) {
+//
+//                }
+//            }
+//        }
+
     }
 
     public SensorService() {
@@ -262,16 +279,21 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY); //Current hour
                 int currentMinute = Calendar.getInstance().get(Calendar.MINUTE); //Current minute
 
-                if (currentHour == 24 && !locationReset) {
-                    FirebaseUtility.ResetUserLocations();
-                    MainActivity.calculator.ResetSharedPreferences();
-                    locationReset = true;
-
-                    //reset today still
-                    todayStill = 0;
-                }
-                if (currentHour != 24 && locationReset) {
-                    locationReset = false;
+//                if (currentHour == 24 && !locationReset) {
+//                    FirebaseUtility.ResetUserLocations();
+//                    MainActivity.calculator.ResetSharedPreferences();
+//                    locationReset = true;
+//                    todayStill = 0;
+//
+//                    //reset today still
+//
+//                }
+//                if (currentHour != 24 && locationReset) {
+//                    locationReset = false;
+//                }
+                if (currentHour == 0 && currentMinute == 15) {
+//                    MainActivity.calculator.ResetSharedPreferences();
+                     MainActivity.calculator.CalculateCaloriesBurnedBySteps();
                 }
 
 
@@ -290,6 +312,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
                         }
                     }
+                    FirebaseUtility.ResetUserLocations();
+                    MainActivity.calculator.ResetSharedPreferences();
+
+                    locationReset = true;
+                    todayStill = 0;
                     //endregion
                 }
 
@@ -361,6 +388,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         }
                         //CreateNotification("location set");
                         //startNotification("Notification with buttons works");
+
+                       // UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
+                       // HTTPHelper.setProperty(property);
+
+                       // new NetworkAsyncTask().execute();
+                        CreateNotification("location set");
+
                     }
                 });
 
