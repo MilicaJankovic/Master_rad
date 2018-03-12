@@ -237,6 +237,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         IntentFilter screenStateFilter = new IntentFilter();
         screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
         screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
+//        screenStateFilter.addAction(Intent.ACTION_USER_PRESENT);
         registerReceiver(receiver, screenStateFilter);
     }
 
@@ -262,7 +263,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY); //Current hour
                 int currentMinute = Calendar.getInstance().get(Calendar.MINUTE); //Current minute
 
-                if (currentHour == 24 && !locationReset) {
+                if (currentHour == 0 && !locationReset) {
                     FirebaseUtility.ResetUserLocations();
                     MainActivity.calculator.ResetSharedPreferences();
                     locationReset = true;
@@ -270,8 +271,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     //reset today still
                     todayStill = 0;
                 }
-                if (currentHour != 24 && locationReset) {
+                if (currentHour != 0 && locationReset) {
                     locationReset = false;
+                }
+
+
+                //send notification about steps
+                if(FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14)
+                {
+
                 }
 
 
@@ -605,22 +613,27 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 Log.i("Check", "Screen went OFF");
                 if (FirebaseUtility.getPartOfTheDay().equals("Night")) {
-                    if (mLightQuantity < 5.0) {
+                    if (mLightQuantity < 5.0 && userSleepTimeStarted == null) {
                         userSleepTimeStarted = new Date();
+                        Log.i("UserSleepTimeStarted: ", String.valueOf(userSleepTimeStarted));
                     }
                 }
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 Log.i("Check", "Screen went ON");
-//                String userage = getString(userAge);
-//                Log.i("Age", userage);
-//                String part = FirebaseUtility.getPartOfTheDay();
-//                Log.i("Time of the day", part);
 
                 // && FirebaseUtility.getPartOfTheDay().equals("Morning")
                 if (userSleepTimeStarted != null && FirebaseUtility.getPartOfTheDay().equals("Morning")) {
                     userSleepTimeEnded = new Date();
                     final int MILLI_TO_HOUR = 1000 * 60 * 60;
                     userSleepTime = (userSleepTimeEnded.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
+
+                    //region test, worked
+//                    Calendar calendar = Calendar.getInstance();
+//                    calendar.add(Calendar.DAY_OF_YEAR, 1);
+//                    Date tomorrow = calendar.getTime();
+//                    userSleepTime = (tomorrow.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
+                    //endregion
+
                     FirebaseUtility.saveUserProperty(String.valueOf(userSleepTime), "sleep");
 
                     userSleepTimeEnded = null;
@@ -628,6 +641,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 }
                 Log.i("Light: ", String.valueOf(mLightQuantity));
             }
+//            else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
+//                Log.i("Check", "USER PRESENT");
+//            }
         }
     }
 
