@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 
 public class HTTPHelper {
-    public static String SERVER_URL = "http://10.66.160.78:8080/";
+    public static String SERVER_URL = "http://192.168.0.15:8080/";
 
 
     //insert one element to SQL database on server
@@ -37,7 +37,7 @@ public class HTTPHelper {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
+            conn.setConnectTimeout(30000);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -57,6 +57,7 @@ public class HTTPHelper {
             jsonObject.put("Sleeping", property.getSleeping());
             jsonObject.put("Weather", property.getWeather());
             jsonObject.put("TargetWeight", property.getTargetWeight());
+            jsonObject.put("Calories", property.getCalories());
             jsonObject.put("DayOfTheWeek", property.getDayOfTheWeek());
             jsonObject.put("PartOfTheWeek", property.getPartOfTheDay());
             jsonObject.put("UserInput", property.getUserInput());

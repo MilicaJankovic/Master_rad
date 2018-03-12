@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -111,10 +112,26 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private float mLightQuantity;
 
     private Boolean vehicleNotification;
+    FeedReaderDbHelper mDbHelper;
 
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
+
+
+
+        mDbHelper = new FeedReaderDbHelper(applicationContext);
+//        UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
+//        Cursor cursor = mDbHelper.ReadDataFromDatabase();
+//        if(cursor.getCount() > 0) {
+//            final List<UserActivityProperties> properties = mDbHelper.GetObjectsFromCursor(cursor);
+//            if (properties != null) {
+//                if(HTTPHelper.setProperties(properties)) {
+//
+//                }
+//            }
+//        }
+
     }
 
     public SensorService() {
@@ -298,6 +315,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
                         }
                     }
+                    FirebaseUtility.ResetUserLocations();
+                    MainActivity.calculator.ResetSharedPreferences();
+
+                    locationReset = true;
+                    todayStill = 0;
                     //endregion
                 }
 
@@ -613,13 +635,17 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 Log.i("Check", "Screen went OFF");
                 if (FirebaseUtility.getPartOfTheDay().equals("Night")) {
-                    if (mLightQuantity < 5.0 && userSleepTimeStarted == null) {
+                    if (mLightQuantity < 5.0) {
                         userSleepTimeStarted = new Date();
                         Log.i("UserSleepTimeStarted: ", String.valueOf(userSleepTimeStarted));
                     }
                 }
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 Log.i("Check", "Screen went ON");
+//                String userage = getString(userAge);
+//                Log.i("Age", userage);
+//                String part = FirebaseUtility.getPartOfTheDay();
+//                Log.i("Time of the day", part);
 
                 // && FirebaseUtility.getPartOfTheDay().equals("Morning")
                 if (userSleepTimeStarted != null && FirebaseUtility.getPartOfTheDay().equals("Morning")) {
