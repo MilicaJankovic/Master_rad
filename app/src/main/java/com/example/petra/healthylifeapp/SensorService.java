@@ -390,7 +390,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
                         //CreateNotification("location set");
-                        //startNotification("Notification with buttons works");
+                        startNotification("Notification with buttons works");
                     }
                 });
 
