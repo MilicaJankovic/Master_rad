@@ -23,6 +23,7 @@ public class UserActivityProperties {
     private int Calories;
     private int DayOfTheWeek;
     private String PartOfTheDay;
+    private String NotificationType;
     private int UserInput;
 
 
@@ -42,6 +43,7 @@ public class UserActivityProperties {
         setCalories(0);
         setDayOfTheWeek(0);
         setPartOfTheDay("");
+        setNotificationType("");
         setUserInput(0);
 
     }
@@ -88,7 +90,7 @@ public class UserActivityProperties {
     }
 
 
-    public UserActivityProperties SetProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part, int input)
+    public UserActivityProperties SetProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part,String notType, int input)
     {
         UserActivityProperties properties = new UserActivityProperties();
 
@@ -104,15 +106,17 @@ public class UserActivityProperties {
         properties.setSleeping(sleeping);
         properties.setWeather(weather);
         properties.setTargetWeight(target);
+        properties.setCalories(cal);
         properties.setDayOfTheWeek(day);
         properties.setPartOfTheDay(part);
+        properties.setNotificationType(notType);
         properties.setUserInput(input);
 
 
         return properties;
     }
 
-    public UserActivityProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part, int input)
+    public UserActivityProperties(String gender, int age, int steps, int still, int contStill, int running, int driving, int cycling,  int sleeping, String weather, int target, int cal, int day, String part,String notType, int input)
     {
         setGender(gender);
         setAge(age);
@@ -125,8 +129,10 @@ public class UserActivityProperties {
         setSleeping(sleeping);
         setWeather(weather);
         setTargetWeight(target);
+        setCalories(cal);
         setDayOfTheWeek(day);
         setPartOfTheDay(part);
+        setNotificationType(notType);
         setUserInput(input);
     }
 
@@ -209,6 +215,14 @@ public class UserActivityProperties {
 
     public void setPartOfTheDay(String partOfTheDay) {
         PartOfTheDay = partOfTheDay;
+    }
+
+    public String getNotificationType() {
+        return NotificationType;
+    }
+
+    public void setNotificationType(String notificationType) {
+        NotificationType = notificationType;
     }
 }
 

@@ -28,6 +28,7 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_CALORIES = "Calories";
         public static final String COLUMN_NAME_DAYOFTHEWEEK = "DayOfTheWeek";
         public static final String COLUMN_NAME_PARTOFTHEDAY = "PartOfTheDay";
+        public static final String COLUMN_NAME_NOTIFICATIONTYPE = "NotificationType";
         public static final String COLUMN_NAME_USERINPUT = "UserInput";
 
 

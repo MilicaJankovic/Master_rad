@@ -125,6 +125,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         Log.i("HERE", "here I am!");
 
 
+
         mDbHelper = new FeedReaderDbHelper(applicationContext);
 //        UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
 //        Cursor cursor = mDbHelper.ReadDataFromDatabase();
@@ -289,18 +290,22 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 int currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY); //Current hour
                 int currentMinute = Calendar.getInstance().get(Calendar.MINUTE); //Current minute
 
-                if (currentHour == 0 && !locationReset) {
-                    FirebaseUtility.ResetUserLocations();
-                    MainActivity.calculator.ResetSharedPreferences();
-                    locationReset = true;
-
-                    //reset today still
-                    todayStill = 0;
-                }
-                if (currentHour != 0 && locationReset) {
-                    locationReset = false;
-                }
-
+//                if (currentHour == 24 && !locationReset) {
+//                    FirebaseUtility.ResetUserLocations();
+//                    MainActivity.calculator.ResetSharedPreferences();
+//                    locationReset = true;
+//                    todayStill = 0;
+//
+//                    //reset today still
+//
+//                }
+//                if (currentHour != 24 && locationReset) {
+//                    locationReset = false;
+//                }
+//                if (currentHour == 0 && currentMinute == 15) {
+////                    MainActivity.calculator.ResetSharedPreferences();
+//                     MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+//                }
 
                 Long stepsCount = null;
                 SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
@@ -404,7 +409,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
                         //CreateNotification("location set");
-//                        startNotification("Notification with buttons works");
+                        //CreateNotification("location set");
+                        //startNotification("Notification with buttons works");
+
+                        // UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
+                        // HTTPHelper.setProperty(property);
+
+                        // new NetworkAsyncTask().execute();
+                        startNotification("Notification with buttons works");
                     }
                 });
 

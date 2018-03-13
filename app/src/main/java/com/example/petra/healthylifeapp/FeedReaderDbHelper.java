@@ -37,6 +37,7 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
                     FeedReaderContract.FeedEntry.COLUMN_NAME_CALORIES + " INTEGER," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_DAYOFTHEWEEK + " INTEGER," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_PARTOFTHEDAY + " TEXT," +
+                    FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE + " STRING," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_USERINPUT + " INTEGER)";
 
 
@@ -87,6 +88,7 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
         values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_CALORIES, properties.getCalories());
         values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_DAYOFTHEWEEK, properties.getDayOfTheWeek());
         values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_PARTOFTHEDAY, properties.getPartOfTheDay());
+        values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE, properties.getNotificationType());
         values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_USERINPUT, properties.getUserInput());
 
         // Insert the new row, returning the primary key value of the new row
@@ -114,6 +116,7 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
                     cursor.getInt(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_CALORIES)),
                     cursor.getInt(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_DAYOFTHEWEEK)),
                     cursor.getString(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_PARTOFTHEDAY)),
+                    cursor.getString(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE)),
                     cursor.getInt(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_USERINPUT)));
             properties.add(property);
         }while(cursor.moveToNext());
@@ -143,6 +146,7 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
                 FeedReaderContract.FeedEntry.COLUMN_NAME_CALORIES,
                 FeedReaderContract.FeedEntry.COLUMN_NAME_DAYOFTHEWEEK,
                 FeedReaderContract.FeedEntry.COLUMN_NAME_PARTOFTHEDAY,
+                FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE,
                 FeedReaderContract.FeedEntry.COLUMN_NAME_USERINPUT
         };
 

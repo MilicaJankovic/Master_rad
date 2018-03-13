@@ -60,6 +60,7 @@ public class HTTPHelper {
             jsonObject.put("Calories", property.getCalories());
             jsonObject.put("DayOfTheWeek", property.getDayOfTheWeek());
             jsonObject.put("PartOfTheWeek", property.getPartOfTheDay());
+            jsonObject.put("NotificationType", property.getNotificationType());
             jsonObject.put("UserInput", property.getUserInput());
 
             Uri.Builder builder = new Uri.Builder()
@@ -120,6 +121,7 @@ public class HTTPHelper {
                 jsonObject.put("Calories", properties.get(i).getCalories());
                 jsonObject.put("DayOfTheWeek", properties.get(i).getDayOfTheWeek());
                 jsonObject.put("PartOfTheDay", properties.get(i).getPartOfTheDay());
+                jsonObject.put("NotificationType", properties.get(i).getNotificationType());
                 jsonObject.put("UserInput", properties.get(i).getUserInput());
                 jsonArray.put(jsonObject);
             }
@@ -188,6 +190,7 @@ public class HTTPHelper {
                         property.setCalories(jsonObject.getInt("Calories"));
                         property.setDayOfTheWeek(jsonObject.getInt("DayOfTheWeek"));
                         property.setPartOfTheDay(jsonObject.getString("PartOfTheDay"));
+                        property.setNotificationType(jsonObject.getString("NotificationType"));
                         property.setUserInput(jsonObject.getInt("UserInput"));
 
 
