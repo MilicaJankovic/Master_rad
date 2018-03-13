@@ -114,10 +114,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private Boolean vehicleNotification;
     FeedReaderDbHelper mDbHelper;
 
+    private int stepsGoal = 10000;
+    private String notificationType = "";
+    private String userGender = "";
+    private int userSleep = 0;
+    private int targetWeight = 0;
+
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
-
 
 
         mDbHelper = new FeedReaderDbHelper(applicationContext);
@@ -166,6 +171,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
                         userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
                         userAge = FirebaseUtility.CalculateAge(dataSnapshot);
+                        stepsGoal = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
+                        userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
+                        userSleep = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
+                        targetWeight = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
                     }
 
                     @Override
@@ -243,7 +252,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         int hour = countHourOfTheDay();
         //if time is between 00:00 and 01:00 set shared pref to false so notification will be fired tomorow again
-        if (hour >= 24 && hour <= 1) {
+        if (hour >= 0 && hour <= 1) {
             SetSharedPreference(false);
         }
 
@@ -293,27 +302,32 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 }
 
 
-                //send notification about steps
-                if(FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14)
-                {
+                Long stepsCount = null;
+                SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
+                if (prefs != null) {
+                    stepsCount = prefs.getLong("StepsCount", 0);
+                }
 
+                //send notification about steps
+                if (FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14) {
+                    if (stepsCount != null) {
+                        if(stepsCount < stepsGoal)
+                        {
+                            startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!");
+                            notificationType = "StepsGoal";
+                        }
+                    }
                 }
 
 
                 if (currentHour == 23 && currentMinute == 55) {
 
                     //region AddCalories for todays date to database
-
-                    SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
-                    if (prefs != null) {
-                        Long stepsCount = prefs.getLong("StepsCount", 0);
-
-                        if (stepsCount != null && stepsCount > 0) {
-                            //CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
-                            //Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
-                            String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
-                            FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
-                        }
+                    if (stepsCount != null && stepsCount > 0) {
+                        //CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
+                        //Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
+                        String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+                        FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
                     }
                     FirebaseUtility.ResetUserLocations();
                     MainActivity.calculator.ResetSharedPreferences();
@@ -390,7 +404,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
                         //CreateNotification("location set");
-                        startNotification("Notification with buttons works");
+//                        startNotification("Notification with buttons works");
                     }
                 });
 
@@ -682,10 +696,39 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             String action = intent.getAction();
             if (SNOOZE_ACTION.equals(action)) {
                 Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
+//                saveNotificationDataToSQLLite();
             } else if (ACCEPT_ACTION.equals(action)) {
                 Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
+                //                saveNotificationDataToSQLLite();
             }
         }
+
+
+    }
+
+    private void saveNotificationDataToSQLLite()
+    {
+        UserActivityProperties uap = new UserActivityProperties();
+        uap.setAge(userAge);
+        uap.setCalories(Integer.getInteger(String.valueOf(userCalories.values())));
+        uap.setContinuousStill(Integer.getInteger(String.valueOf(todayStill)));
+        uap.setCycling(0);
+        uap.setDriving(0);
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(new Date());
+        int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
+
+        uap.setDayOfTheWeek(dayOfWeek);
+        uap.setDriving(0);
+
+        uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
+        uap.setGender(userGender);
+        uap.setSleeping(userSleep);
+        uap.setTargetWeight(targetWeight);
+//        uap.setNotificationType(notificationType);
+
+        mDbHelper.InsertToDatabase(uap);
     }
 
 }
