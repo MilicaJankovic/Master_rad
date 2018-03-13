@@ -64,6 +64,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.lang.reflect.Array;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -101,7 +102,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     //in the end we will cast it to int
     private Double todayStill = 0.0;
     private Date userSleepTimeStarted = null;
-    private Date userSleepTimeEnded = null;
     //endregion
 
     private static final String SNOOZE_ACTION = "Snooze";
@@ -121,6 +121,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private String userGender = "";
     private int userSleep = 0;
     private int targetWeight = 0;
+    private Double cycling = 0.0;
+    private Double driving = 0.0;
 
     public SensorService(Context applicationContext) {
         super();
@@ -341,6 +343,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                     locationReset = true;
                     todayStill = 0.0;
+                    cycling = 0.0;
+                    driving = 0.0;
                     //endregion
                 }
 
@@ -530,38 +534,40 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         switch (probableActivity.getType()) {
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
+                                driving += 0.5;
 
                                 if (vehicleNotification == false) {
                                     vehicleNotification = true;
                                     if (weatherCondition != -1) {
                                         switch (weatherCondition) {
-                                                case Weather.CONDITION_CLOUDY:
-                                                    CreateNotification("It's cloudy! It's good you are in vehicle!");
-                                                    break;
-                                                case Weather.CONDITION_CLEAR:
-                                                    CreateNotification("It's clear outside! You should be walking instead!");
-                                                    break;
-                                                case Weather.CONDITION_FOGGY:
-                                                    CreateNotification("It's foggy outside! Drive carefully!");
-                                                    break;
-                                                case Weather.CONDITION_RAINY:
-                                                    CreateNotification("It's rainy! It's good you are in vehicle!");
-                                                    break;
-                                                case Weather.CONDITION_SNOWY:
-                                                    CreateNotification("It's snowy outside! Drive carefully!");
-                                                    break;
-                                                case Weather.CONDITION_ICY:
-                                                    CreateNotification("It's icy outside! Drive slow!");
-                                                    break;
-                                                default:
-                                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
-                                                    break;
+                                            case Weather.CONDITION_CLOUDY:
+                                                CreateNotification("It's cloudy! It's good you are in vehicle!");
+                                                break;
+                                            case Weather.CONDITION_CLEAR:
+                                                CreateNotification("It's clear outside! You should be walking instead!");
+                                                break;
+                                            case Weather.CONDITION_FOGGY:
+                                                CreateNotification("It's foggy outside! Drive carefully!");
+                                                break;
+                                            case Weather.CONDITION_RAINY:
+                                                CreateNotification("It's rainy! It's good you are in vehicle!");
+                                                break;
+                                            case Weather.CONDITION_SNOWY:
+                                                CreateNotification("It's snowy outside! Drive carefully!");
+                                                break;
+                                            case Weather.CONDITION_ICY:
+                                                CreateNotification("It's icy outside! Drive slow!");
+                                                break;
+                                            default:
+                                                CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+                                                break;
                                         }
                                     }
                                 }
                             }
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
+                                cycling += 0.5;
                                 break;
                             }
                             case DetectedActivity.ON_FOOT: {
@@ -632,6 +638,40 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 });
     }
 
+
+    private String getWeatherCondition() {
+        int weatherCondition = detectWeather();
+        String wcond = "";
+
+        if (weatherCondition != -1) {
+            switch (weatherCondition) {
+                case Weather.CONDITION_CLOUDY:
+                    wcond = "Cloudy";
+                break;
+                case Weather.CONDITION_CLEAR:
+                    wcond = "Cloudy";
+                break;
+                case Weather.CONDITION_FOGGY:
+                    wcond = "Cloudy";
+                break;
+                case Weather.CONDITION_RAINY:
+                    wcond = "Cloudy";
+                break;
+                case Weather.CONDITION_SNOWY:
+                    wcond = "Cloudy";
+                break;
+                case Weather.CONDITION_ICY:
+                    wcond = "Cloudy";
+                break;
+                default:
+                    wcond = "Cloudy";
+                break;
+            }
+        }
+
+        return wcond;
+    }
+
     private int detectWeather() {
         LocationPermissionUtility ac = new LocationPermissionUtility(this);
         if (!ac.checkLocationPermission()) {
@@ -668,16 +708,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         val = Integer.valueOf(todayStill.intValue());
         uap.setContinuousStill(Integer.valueOf(val.intValue()));
 
-        //those two
-        uap.setCycling(0);
-        uap.setDriving(0);
+        uap.setCycling(Integer.valueOf(cycling.intValue()));
+        uap.setDriving(Integer.valueOf(driving.intValue()));
 
         Calendar c = Calendar.getInstance();
         c.setTime(new Date());
         int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 
         uap.setDayOfTheWeek(dayOfWeek);
-        uap.setDriving(0);
 
         uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
         uap.setGender(userGender);
@@ -686,7 +724,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         uap.setNotificationType(notificationType);
         uap.setUserInput(userInput);
 
-        //weather in need
+        uap.setWeather(getWeatherCondition());
 
         mDbHelper.InsertToDatabase(uap);
     }
@@ -701,6 +739,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
+
+    private void SetSharedPreferenceString(String name, String key, String value)
+    {
+        SharedPreferences.Editor editor = getSharedPreferences(name, MODE_PRIVATE).edit();
+        editor.putString(key, value);
+        editor.apply();
+    }
+
+
     public class MyBroadCastReciever extends BroadcastReceiver {
 
         @Override
@@ -711,20 +758,37 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     if (mLightQuantity < 5.0) {
                         userSleepTimeStarted = new Date();
                         Log.i("UserSleepTimeStarted: ", String.valueOf(userSleepTimeStarted));
+                        SetSharedPreferenceString("UserSleepTimeStarted", "SleepStarted", String.valueOf(userSleepTimeStarted));
                     }
                 }
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 Log.i("Check", "Screen went ON");
-//                String userage = getString(userAge);
-//                Log.i("Age", userage);
-//                String part = FirebaseUtility.getPartOfTheDay();
-//                Log.i("Time of the day", part);
+
+                SharedPreferences prefs = getSharedPreferences("UserSleepTimeStarted", MODE_PRIVATE);
+                String sleepStarted = prefs.getString("SleepStarted", "");
+
 
                 // && FirebaseUtility.getPartOfTheDay().equals("Morning")
-                if (userSleepTimeStarted != null && FirebaseUtility.getPartOfTheDay().equals("Morning")) {
-                    userSleepTimeEnded = new Date();
+                if ((userSleepTimeStarted != null || !sleepStarted.equals("")) && FirebaseUtility.getPartOfTheDay().equals("Morning")) {
+                    Date userSleepTimeEnded = new Date();
                     final int MILLI_TO_HOUR = 1000 * 60 * 60;
-                    userSleepTime = (userSleepTimeEnded.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
+
+                    if(userSleepTimeEnded != null)
+                    {
+                        userSleepTime = (userSleepTimeEnded.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
+                        userSleepTimeStarted = null;
+                    }
+                    else{
+                        SimpleDateFormat formatter =new SimpleDateFormat("dd-MM-yyyy");
+                        try {
+                            userSleepTime = (userSleepTimeEnded.getTime() - formatter.parse(sleepStarted).getDate()) / MILLI_TO_HOUR;
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+
+                        SetSharedPreferenceString("UserSleepTimeStarted", "SleepStarted", null);
+                    }
+
 
                     //region test, worked
 //                    Calendar calendar = Calendar.getInstance();
@@ -735,8 +799,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                     FirebaseUtility.saveUserProperty(String.valueOf(userSleepTime), "sleep");
 
-                    userSleepTimeEnded = null;
-                    userSleepTimeStarted = null;
                 }
                 Log.i("Light: ", String.valueOf(mLightQuantity));
             }
