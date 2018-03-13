@@ -132,23 +132,24 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
 
                 button1.setChecked(true);
 
-//                RadioButton button2 = new RadioButton(this);
-//                Long stepsGoal = Long.getLong(user.get("stepsGoal").toString());
-//                switch (Integer.getInteger(stepsGoal.toString())) {
-//                    case 5000:
-//                        button2 = (RadioButton) findViewById(R.id.radio5000);
-//                        break;
-//                    case 10000:
-//                        button2 = (RadioButton) findViewById(R.id.radio10000);
-//                        break;
-//                    case 15000:
-//                        button2 = (RadioButton) findViewById(R.id.radio15000);
-//                        break;
-//                    default:
-//                        button2 = (RadioButton) findViewById(R.id.radio10000);
-//                        break;
-//                }
-//                    button2.setChecked(true);
+                RadioButton button2 = new RadioButton(this);
+                Long stepsGoal = Long.getLong(user.get("stepsGoal").toString());
+                switch (Integer.parseInt(stepsGoal.toString())) {
+                    case 5000:
+                        button2 = (RadioButton) findViewById(R.id.radio5000);
+                        break;
+                    case 10000:
+                        button2 = (RadioButton) findViewById(R.id.radio10000);
+                        break;
+                    case 15000:
+                        button2 = (RadioButton) findViewById(R.id.radio15000);
+                        break;
+                    default:
+                        button2 = (RadioButton) findViewById(R.id.radio10000);
+                        break;
+                }
+
+                button2.setChecked(true);
 
             } else {
                 //10000 by default

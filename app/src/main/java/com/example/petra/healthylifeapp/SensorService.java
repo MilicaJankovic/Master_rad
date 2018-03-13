@@ -99,7 +99,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private int userAge = 0;
     //it needs to be double, because it adds 0.5 minutes all the time
     //in the end we will cast it to int
-    private double todayStill = 0;
+    private Double todayStill = 0.0;
     private Date userSleepTimeStarted = null;
     private Date userSleepTimeEnded = null;
     //endregion
@@ -114,6 +114,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private Boolean vehicleNotification;
     FeedReaderDbHelper mDbHelper;
 
+    private static SensorService instance;
+
     private int stepsGoal = 10000;
     private String notificationType = "";
     private String userGender = "";
@@ -125,8 +127,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         Log.i("HERE", "here I am!");
 
 
-
-        mDbHelper = new FeedReaderDbHelper(applicationContext);
+        //mDbHelper = new FeedReaderDbHelper(applicationContext);
 //        UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
 //        Cursor cursor = mDbHelper.ReadDataFromDatabase();
 //        if(cursor.getCount() > 0) {
@@ -146,6 +147,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
+        mDbHelper = new FeedReaderDbHelper(getApplicationContext());
 
         if (FirebaseUtility.getUser() != null) {
             //startTimer();
@@ -172,10 +175,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userLocations = FirebaseUtility.getUserLocations(dataSnapshot);
                         userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
                         userAge = FirebaseUtility.CalculateAge(dataSnapshot);
-                        stepsGoal = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
+
+                        stepsGoal = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
                         userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
-                        userSleep = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
-                        targetWeight = Integer.getInteger(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
+                        userSleep = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
+                        targetWeight = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
                     }
 
                     @Override
@@ -294,7 +298,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                    FirebaseUtility.ResetUserLocations();
 //                    MainActivity.calculator.ResetSharedPreferences();
 //                    locationReset = true;
-//                    todayStill = 0;
+//                    todayStill = 0.0;
 //
 //                    //reset today still
 //
@@ -316,10 +320,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 //send notification about steps
                 if (FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14) {
                     if (stepsCount != null) {
-                        if(stepsCount < stepsGoal)
-                        {
-                            startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!");
-                            notificationType = "StepsGoal";
+                        if (stepsCount < stepsGoal) {
+                            startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!", "StepsGoal");
                         }
                     }
                 }
@@ -338,7 +340,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     MainActivity.calculator.ResetSharedPreferences();
 
                     locationReset = true;
-                    todayStill = 0;
+                    todayStill = 0.0;
                     //endregion
                 }
 
@@ -409,14 +411,12 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLon = String.format("%.3f", location.getLongitude());
                         }
                         //CreateNotification("location set");
-                        //CreateNotification("location set");
-                        //startNotification("Notification with buttons works");
 
                         // UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
                         // HTTPHelper.setProperty(property);
 
                         // new NetworkAsyncTask().execute();
-                        startNotification("Notification with buttons works");
+                        //startNotification("Notification with buttons works", "NotTest");
                     }
                 });
 
@@ -429,7 +429,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
-    private void startNotification(String notificationMessage) {
+    private void startNotification(String notificationMessage, String notType) {
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(ns);
@@ -475,6 +475,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
 
         notificationManager.notify(1, notification);
+
+        notificationType = notType;
     }
 
 
@@ -533,27 +535,27 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     vehicleNotification = true;
                                     if (weatherCondition != -1) {
                                         switch (weatherCondition) {
-                                            case Weather.CONDITION_CLOUDY:
-                                                CreateNotification("It's cloudy! It's good you are in vehicle!");
-                                                break;
-                                            case Weather.CONDITION_CLEAR:
-                                                CreateNotification("It's clear outside! You should be walking instead!");
-                                                break;
-                                            case Weather.CONDITION_FOGGY:
-                                                CreateNotification("It's foggy outside! Drive carefully!");
-                                                break;
-                                            case Weather.CONDITION_RAINY:
-                                                CreateNotification("It's rainy! It's good you are in vehicle!");
-                                                break;
-                                            case Weather.CONDITION_SNOWY:
-                                                CreateNotification("It's snowy outside! Drive carefully!");
-                                                break;
-                                            case Weather.CONDITION_ICY:
-                                                CreateNotification("It's icy outside! Drive slow!");
-                                                break;
-                                            default:
-                                                CreateNotification("You are in vehicle? Play some good music and drive carefully!");
-                                                break;
+                                                case Weather.CONDITION_CLOUDY:
+                                                    CreateNotification("It's cloudy! It's good you are in vehicle!");
+                                                    break;
+                                                case Weather.CONDITION_CLEAR:
+                                                    CreateNotification("It's clear outside! You should be walking instead!");
+                                                    break;
+                                                case Weather.CONDITION_FOGGY:
+                                                    CreateNotification("It's foggy outside! Drive carefully!");
+                                                    break;
+                                                case Weather.CONDITION_RAINY:
+                                                    CreateNotification("It's rainy! It's good you are in vehicle!");
+                                                    break;
+                                                case Weather.CONDITION_SNOWY:
+                                                    CreateNotification("It's snowy outside! Drive carefully!");
+                                                    break;
+                                                case Weather.CONDITION_ICY:
+                                                    CreateNotification("It's icy outside! Drive slow!");
+                                                    break;
+                                                default:
+                                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+                                                    break;
                                         }
                                     }
                                 }
@@ -654,6 +656,51 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return weatherCondition[0];
     }
 
+    private void saveNotificationDataToSQLLite(int userInput) {
+        UserActivityProperties uap = new UserActivityProperties();
+        uap.setAge(userAge);
+
+        //calories, blah
+        Double myDouble = MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+        Integer val = Integer.valueOf(myDouble.intValue());
+        uap.setCalories(Integer.valueOf(val.intValue()));
+
+        val = Integer.valueOf(todayStill.intValue());
+        uap.setContinuousStill(Integer.valueOf(val.intValue()));
+
+        //those two
+        uap.setCycling(0);
+        uap.setDriving(0);
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(new Date());
+        int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
+
+        uap.setDayOfTheWeek(dayOfWeek);
+        uap.setDriving(0);
+
+        uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
+        uap.setGender(userGender);
+        uap.setSleeping(userSleep);
+        uap.setTargetWeight(targetWeight);
+        uap.setNotificationType(notificationType);
+        uap.setUserInput(userInput);
+
+        //weather in need
+
+        mDbHelper.InsertToDatabase(uap);
+    }
+
+
+    private void ReadDataFromSQLLite() {
+        List<UserActivityProperties> activities = mDbHelper.GetObjectsFromCursor(mDbHelper.ReadDataFromDatabase());
+
+        for (int i = 0; i < activities.size(); i++) {
+            Log.i("Activitie " + i + ": ", String.valueOf(activities.get(i)));
+        }
+    }
+
+
     public class MyBroadCastReciever extends BroadcastReceiver {
 
         @Override
@@ -708,39 +755,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             String action = intent.getAction();
             if (SNOOZE_ACTION.equals(action)) {
                 Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
-//                saveNotificationDataToSQLLite();
+                instance.saveNotificationDataToSQLLite(1);
+                instance.ReadDataFromSQLLite();
             } else if (ACCEPT_ACTION.equals(action)) {
                 Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
-                //                saveNotificationDataToSQLLite();
+                instance.saveNotificationDataToSQLLite(2);
+                instance.ReadDataFromSQLLite();
             }
         }
 
 
     }
-
-    private void saveNotificationDataToSQLLite()
-    {
-        UserActivityProperties uap = new UserActivityProperties();
-        uap.setAge(userAge);
-        uap.setCalories(Integer.getInteger(String.valueOf(userCalories.values())));
-        uap.setContinuousStill(Integer.getInteger(String.valueOf(todayStill)));
-        uap.setCycling(0);
-        uap.setDriving(0);
-
-        Calendar c = Calendar.getInstance();
-        c.setTime(new Date());
-        int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
-
-        uap.setDayOfTheWeek(dayOfWeek);
-        uap.setDriving(0);
-
-        uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
-        uap.setGender(userGender);
-        uap.setSleeping(userSleep);
-        uap.setTargetWeight(targetWeight);
-//        uap.setNotificationType(notificationType);
-
-        mDbHelper.InsertToDatabase(uap);
-    }
-
 }
