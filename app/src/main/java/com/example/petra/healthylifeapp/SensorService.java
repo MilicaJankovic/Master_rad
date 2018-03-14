@@ -305,12 +305,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                    //reset today still
 //
 //                }
-//                if (currentHour != 24 && locationReset) {
-//                    locationReset = false;
-//                }
-//                if (currentHour == 0 && currentMinute == 15) {
-////                    MainActivity.calculator.ResetSharedPreferences();
-//                     MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+                if (currentHour != 24 && locationReset) {
+                    locationReset = false;
+                }
+//                if (currentHour == 2 && currentMinute == 6) {
+//                   MainActivity.calculator.ResetSharedPreferences();
+//                     //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+//                    FirebaseUtility.ResetUserLocations();
 //                }
 
                 Long stepsCount = null;
@@ -421,6 +422,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                         // new NetworkAsyncTask().execute();
                         //startNotification("Notification with buttons works", "NotTest");
+                     //   startNotification("Notification with buttons works");
                     }
                 });
 
@@ -535,6 +537,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
                                 driving += 0.5;
+                                startNotification("You are in vehicle, go to work!", "goToWork");
 
                                 if (vehicleNotification == false) {
                                     vehicleNotification = true;
@@ -568,6 +571,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
                                 cycling += 0.5;
+                                startNotification("Are you going to cycling?.", "goToCycling");
                                 break;
                             }
                             case DetectedActivity.ON_FOOT: {
@@ -583,6 +587,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 if (probableActivity.getConfidence() >= 75) {
                                     TimeStill = 0;
                                 }
+                                startNotification("Are you going to run?.", "goToRunning");
                                 break;
                             }
                             case DetectedActivity.STILL: {
@@ -604,7 +609,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     int hourOfTheDay = countHourOfTheDay();
                                     //send notification if it's not in the middle of the night when sleeping
                                     if (hourOfTheDay <= 22 && hourOfTheDay >= 9) {
-                                        CreateNotification("You are sitting for too long! Please take a walk little bit.");
+                                        startNotification("You are sitting for too long! Please take a walk little bit.", "takeAWalk");
                                     }
                                     TimeStill = 0;
                                 }
