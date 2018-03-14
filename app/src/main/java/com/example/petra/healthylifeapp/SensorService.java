@@ -78,8 +78,17 @@ import java.util.concurrent.TimeUnit;
 
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     public static final String TAG = "StepCounter";
+    private static final String SNOOZE_ACTION = "Snooze";
+    private static final String ACCEPT_ACTION = "Accept";
+    private static SensorService instance;
     public int counter = 0;
     public GoogleApiClient mApiClient;
+
+    //region UserProperties for database
+    public int TimeStill = 0;
+    public int TimeWalking = 0;
+    public long userSleepTime = 0;
+    FeedReaderDbHelper mDbHelper;
     //firebase
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
@@ -91,31 +100,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private TimerTask timerTask;
     private Timer timerActivity;
     private TimerTask timerTaskActivity;
-    private Boolean locationReset;
+    //endregion
 
-    //region UserProperties for database
-    public int TimeStill = 0;
-    public int TimeWalking = 0;
-    public long userSleepTime = 0;
+    private Boolean locationReset;
     private int userAge = 0;
     //it needs to be double, because it adds 0.5 minutes all the time
     //in the end we will cast it to int
     private Double todayStill = 0.0;
     private Date userSleepTimeStarted = null;
-    //endregion
-
-    private static final String SNOOZE_ACTION = "Snooze";
-    private static final String ACCEPT_ACTION = "Accept";
-
     private SensorManager mSensorManager;
     private Sensor mLightSensor;
     private float mLightQuantity;
-
     private Boolean vehicleNotification;
-    FeedReaderDbHelper mDbHelper;
-
-    private static SensorService instance;
-
     private int stepsGoal = 10000;
     private String notificationType = "";
     private String userGender = "";
@@ -123,25 +119,19 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private int targetWeight = 0;
     private Double cycling = 0.0;
     private Double driving = 0.0;
-
     private int weatherConditionGlobal = 0;
+
+    //region nootification flags
+    boolean flagAtHome = false;
+    boolean flagDriving = false;
+    boolean flagRunning = false;
+    boolean flagCycling = false;
+    //endregion
+
 
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
-
-
-        //mDbHelper = new FeedReaderDbHelper(applicationContext);
-//        UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
-//        Cursor cursor = mDbHelper.ReadDataFromDatabase();
-//        if(cursor.getCount() > 0) {
-//            final List<UserActivityProperties> properties = mDbHelper.GetObjectsFromCursor(cursor);
-//            if (properties != null) {
-//                if(HTTPHelper.setProperties(properties)) {
-//
-//                }
-//            }
-//        }
 
     }
 
@@ -197,15 +187,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
             //get first location when service starts
             GetAndStoreCurrentLocation();
-            //CheckUserActivity();
             GetCurrentActivity();
-
-            //try this in timer task
-//            MyBroadCastReciever receiver = new MyBroadCastReciever();
-//            IntentFilter screenStateFilter = new IntentFilter();
-//            screenStateFilter.addAction(Intent.ACTION_SCREEN_ON);
-//            screenStateFilter.addAction(Intent.ACTION_SCREEN_OFF);
-//            registerReceiver(receiver, screenStateFilter);
 
             locationReset = false;
             vehicleNotification = false;
@@ -432,15 +414,33 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             FirebaseUtility.SaveUserLocation(location.getLatitude() + "|" + location.getLongitude(), userLocations);
                             PreviousLat = String.format("%.3f", location.getLatitude());
                             PreviousLon = String.format("%.3f", location.getLongitude());
+
+                            flagAtHome = false;
                         }
-                        //CreateNotification("location set");
+                        else{
+                            //to send it when register it
+                            if(!flagAtHome) {
+                                int weatherCondition = weatherConditionGlobal;
+                                if (weatherCondition != -1) {
+                                    switch (weatherCondition) {
+                                        case 0:
+                                            startNotification("Are you at home?", "atHome");
+                                            break;
+                                        case Weather.CONDITION_CLOUDY:
+                                            startNotification("Are you at home? It is cloudy, it may start raining!", "atHome");
+                                            break;
+                                        case Weather.CONDITION_CLEAR:
+                                            startNotification("Are you at home? It is clear outside! Go to a walk!!", "takeAWalk");
+                                            break;
+                                        case Weather.CONDITION_RAINY:
+                                            startNotification("Are you at home? It's rainy outside, you better be!", "atHome");
+                                            break;
+                                    }
+                                }
 
-                        // UserActivityProperties property = new UserActivityProperties("", 0, 0,0,0,0,0,0,0,"", 0,0,0,"", 0);
-                        // HTTPHelper.setProperty(property);
-
-                        // new NetworkAsyncTask().execute();
-                        //startNotification("Notification with buttons works", "NotTest");
-                     //   startNotification("Notification with buttons works");
+                                flagAtHome = true;
+                            }
+                        }
                     }
                 });
 
@@ -499,8 +499,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
 
         notificationManager.notify(1, notification);
-
-        notificationType = notType;
+        //notificationManager.cancelAll();
     }
 
 
@@ -557,49 +556,52 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
                                 driving += 0.5;
-                                startNotification("You are in vehicle, are you going to work?", "goToWork");
 
-                                if (vehicleNotification == false) {
-                                    vehicleNotification = true;
-                                    if (weatherCondition != -1) {
-                                        switch (weatherCondition) {
-                                            case Weather.CONDITION_CLOUDY:
-                                                CreateNotification("It's cloudy! It's good you are in vehicle!");
-                                                break;
-                                            case Weather.CONDITION_CLEAR:
-                                                CreateNotification("It's clear outside! You should be walking instead!");
-                                                break;
-                                            case Weather.CONDITION_FOGGY:
-                                                CreateNotification("It's foggy outside! Drive carefully!");
-                                                break;
-                                            case Weather.CONDITION_RAINY:
-                                                CreateNotification("It's rainy! It's good you are in vehicle!");
-                                                break;
-                                            case Weather.CONDITION_SNOWY:
-                                                CreateNotification("It's snowy outside! Drive carefully!");
-                                                break;
-                                            case Weather.CONDITION_ICY:
-                                                CreateNotification("It's icy outside! Drive slow!");
-                                                break;
-                                            default:
-                                                CreateNotification("You are in vehicle? Play some good music and drive carefully!");
-                                                break;
+                                if(!flagDriving) {
+                                    startNotification("You are in vehicle, are you going to work?", "goToWork");
+
+                                    if (vehicleNotification == false) {
+                                        vehicleNotification = true;
+                                        if (weatherCondition != -1) {
+                                            switch (weatherCondition) {
+                                                case Weather.CONDITION_CLOUDY:
+                                                    CreateNotification("It's cloudy! It's good you are in vehicle!");
+                                                    break;
+                                                case Weather.CONDITION_CLEAR:
+                                                    CreateNotification("It's clear outside! You should be walking instead!");
+                                                    break;
+                                                case Weather.CONDITION_FOGGY:
+                                                    CreateNotification("It's foggy outside! Drive carefully!");
+                                                    break;
+                                                case Weather.CONDITION_RAINY:
+                                                    CreateNotification("It's rainy! It's good you are in vehicle!");
+                                                    break;
+                                                case Weather.CONDITION_SNOWY:
+                                                    CreateNotification("It's snowy outside! Drive carefully!");
+                                                    break;
+                                                case Weather.CONDITION_ICY:
+                                                    CreateNotification("It's icy outside! Drive slow!");
+                                                    break;
+                                                default:
+                                                    CreateNotification("You are in vehicle? Play some good music and drive carefully!");
+                                                    break;
+                                            }
                                         }
                                     }
                                 }
+
+                                flagDriving = true;
+                                flagRunning = false;
                             }
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
                                 cycling += 0.5;
-                                startNotification("Are you going to cycling?.", "goToCycling");
-                                break;
-                            }
-                            case DetectedActivity.ON_FOOT: {
-                                vehicleNotification = false;
-                                Log.e("ActivityRecognition", "On Foot: " + probableActivity.getConfidence());
-                                if (probableActivity.getConfidence() >= 75) {
-                                    TimeStill = 0;
+                                if(!flagCycling) {
+                                    startNotification("Are you going to cycling?.", "goToCycling");
+                                    flagCycling = true;
                                 }
+
+                                flagRunning = false;
                                 break;
                             }
                             case DetectedActivity.RUNNING: {
@@ -607,27 +609,16 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 if (probableActivity.getConfidence() >= 75) {
                                     TimeStill = 0;
                                 }
-                                startNotification("Are you going to run?.", "goToRunning");
+
+                                if(!flagRunning) {
+                                    startNotification("Are you going to run?.", "goToRunning");
+                                    flagRunning = true;
+                                }
+
+                                flagCycling = false;
                                 break;
                             }
                             case DetectedActivity.STILL: {Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
-
-                                //to send it when register it
-                                if(TimeStill < 5) {
-                                    if (weatherCondition != -1) {
-                                        switch (weatherCondition) {
-                                            case 0:
-                                                startNotification("Are you at home?", "atHome");
-                                                break;
-                                            case Weather.CONDITION_CLOUDY:
-                                                startNotification("Are you at home? It is cloudy, it may start raining!", "atHome");
-                                                break;
-                                            case Weather.CONDITION_CLEAR:
-                                                startNotification("Are you at home? It is clear outside! Go to a walk!!", "takeAWalk");
-                                                break;
-                                        }
-                                    }
-                                }
 
                                 vehicleNotification = false;
 
@@ -649,10 +640,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     }
                                     TimeStill = 0;
                                 }
-                                break;
-                            }
-                            case DetectedActivity.TILTING: {
-                                Log.e("ActivityRecognition", "Tilting: " + probableActivity.getConfidence());
+
+                                //after driving, user can be still or walking
+                                flagDriving = false;
+                                flagCycling = false;
+                                flagRunning = false;
                                 break;
                             }
                             case DetectedActivity.WALKING: {
@@ -668,10 +660,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     CreateNotification("You are walking for so long! Well done!");
                                     TimeWalking = 0;
                                 }
-                                break;
-                            }
-                            case DetectedActivity.UNKNOWN: {
-                                Log.e("ActivityRecognition", "Unknown: " + probableActivity.getConfidence());
+
+                                //after driving, user can be still or walking
+                                flagDriving = false;
+                                flagCycling = false;
+                                flagRunning = false;
                                 break;
                             }
                         }
@@ -758,7 +751,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 
         uap.setDayOfTheWeek(dayOfWeek);
-
+        uap.setStill(TimeStill);
         uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
         uap.setGender(userGender);
         uap.setSleeping(userSleep);
@@ -767,6 +760,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         uap.setUserInput(userInput);
 
         uap.setWeather(getWeatherCondition());
+
+        Long stepsCount = null;
+        SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
+        if (prefs != null) {
+            stepsCount = prefs.getLong("StepsCount", 0);
+        }
+        uap.setStepsNum(stepsCount.intValue());
 
         mDbHelper.InsertToDatabase(uap);
 
@@ -799,6 +799,29 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         editor.apply();
     }
 
+    public static class NotificationReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO Auto-generated method stub
+            String action = intent.getAction();
+            if (SNOOZE_ACTION.equals(action)) {
+                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
+                instance.saveNotificationDataToSQLLite(1);
+                instance.ReadDataFromSQLLite();
+            } else if (ACCEPT_ACTION.equals(action)) {
+                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
+                instance.saveNotificationDataToSQLLite(2);
+                instance.ReadDataFromSQLLite();
+            }
+
+            String ns = Context.NOTIFICATION_SERVICE;
+            NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(ns);
+            mNotificationManager.cancel(1);
+        }
+
+
+    }
 
     public class MyBroadCastReciever extends BroadcastReceiver {
 
@@ -858,26 +881,5 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                Log.i("Check", "USER PRESENT");
 //            }
         }
-    }
-
-
-    public static class NotificationReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            // TODO Auto-generated method stub
-            String action = intent.getAction();
-            if (SNOOZE_ACTION.equals(action)) {
-                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
-                instance.saveNotificationDataToSQLLite(1);
-                instance.ReadDataFromSQLLite();
-            } else if (ACCEPT_ACTION.equals(action)) {
-                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
-                instance.saveNotificationDataToSQLLite(2);
-                instance.ReadDataFromSQLLite();
-            }
-        }
-
-
     }
 }
