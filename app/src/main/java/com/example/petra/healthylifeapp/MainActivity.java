@@ -119,6 +119,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     public static CaloriesCalculator calculator;
 
+    private static int weathercondition = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -372,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         return false;
     }
 
-    private void detectWeather() {
+    public void detectWeather() {
         if (!checkLocationPermission()) {
             return;
         }
@@ -388,6 +390,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                             txtWeather.setText("Temp: " + weather.getTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
                             txtWeather.append("Feels like: " + weather.getFeelsLikeTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
                             txtWeather.append("Humidity: " + weather.getHumidity() + System.getProperty("line.separator"));
+
+                            weathercondition = weather.getConditions()[0];
 
                             switch (weather.getConditions()[0]) {
                                 case Weather.CONDITION_CLOUDY:
@@ -414,6 +418,12 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
                     }
                 });
+    }
+
+
+    public static int returnWeatherConditon()
+    {
+        return weathercondition;
     }
 
     public boolean checkLocationPermission() {

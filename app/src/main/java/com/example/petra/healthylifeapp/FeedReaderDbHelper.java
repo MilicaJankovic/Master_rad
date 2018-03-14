@@ -67,6 +67,11 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
         super.onDowngrade(db, oldVersion, newVersion);
     }
 
+    public void DeleteFromTable(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DELETE FROM "+ FeedReaderContract.FeedEntry.TABLE_NAME);
+    }
+
     public void InsertToDatabase(UserActivityProperties properties)
     {
         // Gets the data repository in write mode

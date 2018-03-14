@@ -124,6 +124,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private Double cycling = 0.0;
     private Double driving = 0.0;
 
+    private int weatherConditionGlobal = 0;
+
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
@@ -143,7 +145,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
     }
 
-    public SensorService() {
+    public SensorService(){
+
     }
 
     @Override
@@ -206,6 +209,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
             locationReset = false;
             vehicleNotification = false;
+            weatherConditionGlobal = MainActivity.returnWeatherConditon();
         }
 
         SetLightSensor();
@@ -284,6 +288,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         timerActivity = new Timer();
         initializeTimerTaskActivity();
         timer.schedule(timerTaskActivity, 30000, 30000); //
+    }
+
+
+    public void setTimerTaskWeather()
+    {
+        Timer timerWeather = new Timer();
+        TimerTask timerTaskWeather = new TimerTask() {
+            @Override
+            public void run() {
+                weatherConditionGlobal = detectWeather();
+            }
+        };
+        //initializeTimerTaskWeather();
+        timerWeather.schedule(timerTaskWeather, TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1));
     }
 
     /**
@@ -504,6 +522,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void onConnected(@Nullable Bundle bundle) {
         startTimer();
         startTimerActiviy();
+        setTimerTaskWeather();
     }
 
     @Override
@@ -531,13 +550,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         DetectedActivity probableActivity = ar.getMostProbableActivity();
                         Log.i(TAG, probableActivity.toString());
 
-                        int weatherCondition = detectWeather();
+                        //int weatherCondition = detectWeather();
+                        int weatherCondition = weatherConditionGlobal;
 
                         switch (probableActivity.getType()) {
                             case DetectedActivity.IN_VEHICLE: {
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
                                 driving += 0.5;
-                                startNotification("You are in vehicle, go to work!", "goToWork");
+                                startNotification("You are in vehicle, are you going to work?", "goToWork");
 
                                 if (vehicleNotification == false) {
                                     vehicleNotification = true;
@@ -590,8 +610,24 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 startNotification("Are you going to run?.", "goToRunning");
                                 break;
                             }
-                            case DetectedActivity.STILL: {
-                                Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
+                            case DetectedActivity.STILL: {Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
+
+                                //to send it when register it
+                                if(TimeStill < 5) {
+                                    if (weatherCondition != -1) {
+                                        switch (weatherCondition) {
+                                            case 0:
+                                                startNotification("Are you at home?", "atHome");
+                                                break;
+                                            case Weather.CONDITION_CLOUDY:
+                                                startNotification("Are you at home? It is cloudy, it may start raining!", "atHome");
+                                                break;
+                                            case Weather.CONDITION_CLEAR:
+                                                startNotification("Are you at home? It is clear outside! Go to a walk!!", "takeAWalk");
+                                                break;
+                                        }
+                                    }
+                                }
 
                                 vehicleNotification = false;
 
@@ -645,7 +681,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
 
     private String getWeatherCondition() {
-        int weatherCondition = detectWeather();
+        //int weatherCondition = detectWeather();
+        int weatherCondition = weatherConditionGlobal;
         String wcond = "";
 
         if (weatherCondition != -1) {
@@ -732,15 +769,25 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         uap.setWeather(getWeatherCondition());
 
         mDbHelper.InsertToDatabase(uap);
+
+        List<UserActivityProperties> props = new ArrayList<>();
+        props.add(uap);
+
+        NetworkAsyncTask nat = new NetworkAsyncTask(mDbHelper);
+        //nat.doInBackground();
+        nat.execute();
+        //HTTPHelper.setProperties(props);
     }
 
 
-    private void ReadDataFromSQLLite() {
+    private List<UserActivityProperties> ReadDataFromSQLLite() {
         List<UserActivityProperties> activities = mDbHelper.GetObjectsFromCursor(mDbHelper.ReadDataFromDatabase());
 
         for (int i = 0; i < activities.size(); i++) {
             Log.i("Activitie " + i + ": ", String.valueOf(activities.get(i)));
         }
+
+        return activities;
     }
 
 
