@@ -23,9 +23,10 @@ public class NetworkAsyncTask extends AsyncTask<Void, Void, Void> {
         try {
             //UserActivityProperties property = new UserActivityProperties();
             List<UserActivityProperties> props = ReadDataFromSQLLite();
-            HTTPHelper.setProperties(props);
-            //delete from sqllite after putting data to phpmyadmin
-            mDbHelper.DeleteDataFromDatabase();
+            if (HTTPHelper.setProperties(props)) {
+                //delete from sqllite after putting data to phpmyadmin
+                mDbHelper.DeleteDataFromDatabase();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
