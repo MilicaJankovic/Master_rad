@@ -7,9 +7,11 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringDef;
@@ -67,6 +69,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -120,11 +123,15 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     public static CaloriesCalculator calculator;
 
     private static int weathercondition = 0;
-
+    FeedReaderDbHelper mDbHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        //send all data from sqllite, and clear sqllite
+
 
         if (savedInstanceState != null) {
             authInProgress = savedInstanceState.getBoolean(AUTH_PENDING);
@@ -133,8 +140,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-
-
+        mDbHelper = new FeedReaderDbHelper(getApplicationContext());
+     //   mDbHelper.DeleteTable();
+   //     mDbHelper.CreateTable();
+        InitializeDB();
 //        BackgroundService service = new BackgroundService();
 //        BackgroundService.FenceReceiver receiver = service.new FenceReceiver();
 //        BackgroundService.FenceReceiver receiver = new BackgroundService.FenceReceiver();
@@ -799,6 +808,36 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 //        boolean value = pref.getBoolean(name, false);
 //        return value;
 //    }
+    private void InitializeDB()
+    {
+        final boolean[] checker = {false};
+        final AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] params) {
+                //send all objects from sqllite to node server
+                Cursor cursor = mDbHelper.ReadDataFromDatabase();
+                if(cursor.getCount() > 0) {
+                    final List<UserActivityProperties> properties = mDbHelper.GetObjectsFromCursor(cursor);
+                    if (properties != null) {
+                        if(HTTPHelper.setProperties(properties)) {
+                            checker[0] = true;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+                //delete all objects from sqllite if there is connection to the server
+                if(checker[0]) {
+                    mDbHelper.DeleteDataFromDatabase();
+                }
+            }
+        };
+        task.execute();
+    }
 
     private void InitializeCheckBoxes()
     {

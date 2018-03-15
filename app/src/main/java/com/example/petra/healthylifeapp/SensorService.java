@@ -305,9 +305,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                    //reset today still
 //
 //                }
-                if (currentHour != 24 && locationReset) {
-                    locationReset = false;
-                }
+//                if (currentHour != 24 && locationReset) {
+//                    locationReset = false;
+//                }
 //                if (currentHour == 2 && currentMinute == 6) {
 //                   MainActivity.calculator.ResetSharedPreferences();
 //                     //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
@@ -353,6 +353,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
+
+                if( MainActivity.calculator.checkExcersises() < 0)
+                {
+                    startNotification("Hey! Its time for training, do some exercises?", "doExercises");
+                }
+
+                if(currentHour > 8 && currentHour < 12)
+                {
+                    startNotification("Hey! Its morning, are you awake?", "getUp");
+                }
+                if(currentHour > 22 && currentHour < 2)
+                {
+                    startNotification("Hey! Its evening, are you going to sleep?", "goToBad");
+                }
             }
         };
     }

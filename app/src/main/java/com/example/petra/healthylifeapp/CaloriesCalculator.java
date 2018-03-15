@@ -170,4 +170,30 @@ public class CaloriesCalculator {
         SetSharedPreferencesForExcersise(situps, false);
     }
 
+
+    public int checkExcersises()
+    {
+        int exercises = 0;
+
+        if(GetSharedPreferencesForExercise(squats))
+            exercises++;
+
+        if(GetSharedPreferencesForExercise(jumpingJack))
+            exercises++;
+
+        if(GetSharedPreferencesForExercise(mountainClimbers))
+            exercises++;
+
+        if(GetSharedPreferencesForExercise(burpees))
+            exercises++;
+
+        if(GetSharedPreferencesForExercise(pushups))
+            exercises++;
+
+        if(GetSharedPreferencesForExercise(situps))
+            exercises++;
+
+        return exercises;
+    }
+
 }

@@ -37,7 +37,7 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
                     FeedReaderContract.FeedEntry.COLUMN_NAME_CALORIES + " INTEGER," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_DAYOFTHEWEEK + " INTEGER," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_PARTOFTHEDAY + " TEXT," +
-                    FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE + " STRING," +
+                    FeedReaderContract.FeedEntry.COLUMN_NAME_NOTIFICATIONTYPE + " TEXT," +
                     FeedReaderContract.FeedEntry.COLUMN_NAME_USERINPUT + " INTEGER)";
 
 
@@ -51,6 +51,11 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        db.execSQL(SQL_CREATE_ENTRIES);
+    }
+    public void CreateTable()
+    {
+        SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL(SQL_CREATE_ENTRIES);
     }
 
@@ -70,6 +75,10 @@ public class FeedReaderDbHelper extends SQLiteOpenHelper {
     public void DeleteFromTable(){
         SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL("DELETE FROM "+ FeedReaderContract.FeedEntry.TABLE_NAME);
+    }
+    public void DeleteTable(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL(SQL_DELETE_ENTRIES);
     }
 
     public void InsertToDatabase(UserActivityProperties properties)
