@@ -55,14 +55,14 @@ public class FirebaseUtility {
 
         for (DataSnapshot ds : dataSnapshot.getChildren()) {
             String UserID = FirebaseUtility.getUser().getUid();
-
             HashMap<String, Object> user = null;
             if (ds.child(UserID).getValue() != null) {
                 user = (HashMap<String, Object>) ds.child(UserID).getValue();
             }
-
-            if (user.get(propertyName) != null) {
-                property = user.get(propertyName).toString();
+            if(user != null) {
+                if (user.get(propertyName) != null) {
+                    property = user.get(propertyName).toString();
+                }
             }
         }
 
@@ -101,7 +101,7 @@ public class FirebaseUtility {
                 user = (HashMap<String, Object>) ds.child(UserID).getValue();
             }
 
-            if (user.get("calories") != null) {
+            if (user != null && user.get("calories") != null) {
                 //calories = new HashMap<>();
                 calories = (HashMap<String, Double>) user.get("calories");
             }
@@ -121,7 +121,7 @@ public class FirebaseUtility {
                 user = (HashMap<String, Object>) ds.child(UserID).getValue();
             }
 
-            if (user.get("locations") != null) {
+            if (user != null && user.get("locations") != null) {
                 userLocs = new ArrayList<>();
                 //String lala = user.get("locations").toString();
 //                Map<String, String> locations = new HashMap<>();

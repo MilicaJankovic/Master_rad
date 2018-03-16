@@ -94,8 +94,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private DatabaseReference mDatabase;
     private ArrayList<String> userLocations;
     private HashMap<String, Double> userCalories;
-    private String PreviousLat = "";
-    private String PreviousLon = "";
+    private Double PreviousLat = 0.0;
+    private Double PreviousLon = 0.0;
     private Timer timer;
     private TimerTask timerTask;
     private Timer timerActivity;
@@ -330,7 +330,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 }
 
 
-                if (currentHour == 23 && currentMinute == 55) {
+                if (currentHour == 23 && (currentMinute > 55 && currentMinute < 59)) {
 
                     //region AddCalories for todays date to database
                     if (stepsCount != null && stepsCount > 0) {
@@ -354,7 +354,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
 
-                if( MainActivity.calculator.checkExcersises() < 0)
+                if( MainActivity.calculator.checkExcersises() <= 0)
                 {
                     startNotification("Hey! Its time for training, do some exercises?", "doExercises");
                 }
@@ -421,13 +421,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         // UpdateLocation(location);
 
                         //save location in database only if it's different from previous
-                        String lat = String.format("%.3f", location.getLatitude());
-                        String lon = String.format("%.3f", location.getLongitude());
+                        Double lat = location.getLatitude();
+                        Double lon = location.getLongitude();
 
                         if (!lat.equals(PreviousLat) || !lon.equals(PreviousLon)) {
                             FirebaseUtility.SaveUserLocation(location.getLatitude() + "|" + location.getLongitude(), userLocations);
-                            PreviousLat = String.format("%.3f", location.getLatitude());
-                            PreviousLon = String.format("%.3f", location.getLongitude());
+                            PreviousLat = location.getLatitude();
+                            PreviousLon = location.getLongitude();
 
                             flagAtHome = false;
                         }
@@ -698,19 +698,19 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     wcond = "Cloudy";
                 break;
                 case Weather.CONDITION_CLEAR:
-                    wcond = "Cloudy";
+                    wcond = "Clear";
                 break;
                 case Weather.CONDITION_FOGGY:
-                    wcond = "Cloudy";
+                    wcond = "Foggy";
                 break;
                 case Weather.CONDITION_RAINY:
-                    wcond = "Cloudy";
+                    wcond = "Rainy";
                 break;
                 case Weather.CONDITION_SNOWY:
-                    wcond = "Cloudy";
+                    wcond = "Snowy";
                 break;
                 case Weather.CONDITION_ICY:
-                    wcond = "Cloudy";
+                    wcond = "Icy";
                 break;
                 default:
                     wcond = "Cloudy";
@@ -820,11 +820,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             // TODO Auto-generated method stub
             String action = intent.getAction();
             if (SNOOZE_ACTION.equals(action)) {
-                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
                 instance.saveNotificationDataToSQLLite(1);
                 instance.ReadDataFromSQLLite();
             } else if (ACCEPT_ACTION.equals(action)) {
-                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
                 instance.saveNotificationDataToSQLLite(2);
                 instance.ReadDataFromSQLLite();
             }

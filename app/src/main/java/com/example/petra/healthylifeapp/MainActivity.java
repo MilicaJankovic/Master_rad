@@ -128,7 +128,19 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        mApiClient = new GoogleApiClient.Builder(MainActivity.this)
+                .addApi(Fitness.SENSORS_API)
+                .addApi(Fitness.RECORDING_API)
+                .addApi(ActivityRecognition.API)
+                .addApi(Fitness.HISTORY_API)
+                .addApi(Awareness.API)
+                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .enableAutoManage(this, 0, this)
+                .build();
+        mApiClient.connect();
 
         //send all data from sqllite, and clear sqllite
 
@@ -152,19 +164,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         if (currentUser != null) {
 
-        mApiClient = new GoogleApiClient.Builder(MainActivity.this)
-                .addApi(Fitness.SENSORS_API)
-                .addApi(Fitness.RECORDING_API)
-                .addApi(ActivityRecognition.API)
-                .addApi(Fitness.HISTORY_API)
-                .addApi(Awareness.API)
-                .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
-                .addApi(LocationServices.API)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .enableAutoManage(this, 0, this)
-                .build();
-        mApiClient.connect();
+
 
         /**********************STEPS**************************/
         FitnessOptions fitnessOptions =
@@ -366,8 +366,11 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         if (!isMyServiceRunning(mSensorService.getClass())) {
             startService(mServiceIntent);
         }
+        if(!userWeight.equals("") && !userHeight.equals(""))
+            calculator = new CaloriesCalculator(this, Double.valueOf(userWeight), Double.valueOf(userHeight));
+        else
+            calculator = new CaloriesCalculator(this, 1, 1);
 
-        calculator = new CaloriesCalculator(this, Double.valueOf(userWeight), Double.valueOf(userHeight));
         InitializeCheckBoxes();
     }
 
