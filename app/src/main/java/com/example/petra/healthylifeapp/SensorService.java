@@ -126,6 +126,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     boolean flagDriving = false;
     boolean flagRunning = false;
     boolean flagCycling = false;
+    boolean flagTraining = false;
     //endregion
 
 
@@ -346,6 +347,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     todayStill = 0.0;
                     cycling = 0.0;
                     driving = 0.0;
+                    flagTraining = false;
                     //endregion
                 }
 
@@ -354,18 +356,19 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
 
-                if( MainActivity.calculator.checkExcersises() <= 0)
+                if( MainActivity.calculator.checkExcersises() <= 0 && !flagTraining)
                 {
-                    startNotification("Hey! Its time for training, do some exercises?", "doExercises");
+                    startNotification("Hey! It's time for training, do some exercises?", "doExercises");
+                    flagTraining = true;
                 }
 
                 if(currentHour > 8 && currentHour < 12)
                 {
-                    startNotification("Hey! Its morning, are you awake?", "getUp");
+                    startNotification("Hey! It's morning, are you awake?", "getUp");
                 }
                 if(currentHour > 22 && currentHour < 2)
                 {
-                    startNotification("Hey! Its evening, are you going to sleep?", "goToBad");
+                    startNotification("Hey! It's evening, are you going to sleep?", "goToBad");
                 }
             }
         };
@@ -821,11 +824,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             String action = intent.getAction();
             if (SNOOZE_ACTION.equals(action)) {
 //                Toast.makeText(context, "SNOOZE CALLED", Toast.LENGTH_SHORT).show();
-                instance.saveNotificationDataToSQLLite(1);
+                instance.saveNotificationDataToSQLLite(0);
                 instance.ReadDataFromSQLLite();
             } else if (ACCEPT_ACTION.equals(action)) {
 //                Toast.makeText(context, "ACCEPT CALLED", Toast.LENGTH_SHORT).show();
-                instance.saveNotificationDataToSQLLite(2);
+                instance.saveNotificationDataToSQLLite(1);
                 instance.ReadDataFromSQLLite();
             }
 

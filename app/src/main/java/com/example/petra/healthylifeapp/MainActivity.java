@@ -834,9 +834,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
             protected void onPostExecute(Object o) {
                 super.onPostExecute(o);
                 //delete all objects from sqllite if there is connection to the server
-                if(checker[0]) {
-                    mDbHelper.DeleteDataFromDatabase();
-                }
+//                if(checker[0]) {
+//                    mDbHelper.DeleteDataFromDatabase();
+//                }
             }
         };
         task.execute();
