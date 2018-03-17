@@ -1,4 +1,4 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.DBMaintenance;
 
 import android.content.ContentValues;
 import android.content.Context;

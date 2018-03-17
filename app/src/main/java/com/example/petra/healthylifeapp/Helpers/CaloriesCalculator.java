@@ -1,11 +1,10 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.Helpers;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.petra.healthylifeapp.DBMaintenance.FirebaseUtility;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -14,7 +13,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.example.petra.healthylifeapp.MainActivity.ExerciseTag;
@@ -74,6 +73,7 @@ public class CaloriesCalculator {
         this.weight = 0;
         this.height = 0;
         this.stepsCount = 0;
+
     }
 
     public double CalculateCaloriesBurnedBySteps()
@@ -110,22 +110,22 @@ public class CaloriesCalculator {
         double pushupsCalories = 0;
         double situpsCalories = 0;
 
-        if(GetSharedPreferencesForExercise(squats))
+        if(GetSharedPreferencesForExercise(squats, context))
             squatsCalories = weight * 0.96 * 1;
 
-        if(GetSharedPreferencesForExercise(jumpingJack))
+        if(GetSharedPreferencesForExercise(jumpingJack, context))
             jumpingCalories = weight * 0.75 * 1;
 
-        if(GetSharedPreferencesForExercise(mountainClimbers))
+        if(GetSharedPreferencesForExercise(mountainClimbers, context))
             mountainCalories = weight * 0.94 * 1;
 
-        if(GetSharedPreferencesForExercise(burpees))
+        if(GetSharedPreferencesForExercise(burpees, context))
             barpeesCalories = weight * 0.75 * 1;
 
-        if(GetSharedPreferencesForExercise(pushups))
+        if(GetSharedPreferencesForExercise(pushups, context))
             pushupsCalories = weight * 0.70 * 1;
 
-        if(GetSharedPreferencesForExercise(situps))
+        if(GetSharedPreferencesForExercise(situps, context))
             situpsCalories = weight * 0.45 * 1;
 
         return squatsCalories + jumpingCalories + mountainCalories + barpeesCalories + pushupsCalories + situpsCalories;
@@ -133,9 +133,9 @@ public class CaloriesCalculator {
     }
 
 
-    public void SetNumberOfSteps(long number)
+    public void SetNumberOfSteps(long number, Context con)
     {
-        SharedPreferences.Editor editor = context.getSharedPreferences(ExerciseTag, Context.MODE_PRIVATE).edit();
+        SharedPreferences.Editor editor = con.getSharedPreferences(ExerciseTag, Context.MODE_PRIVATE).edit();
         editor.putLong(CaloriesCalculator.numberSteps, number);
         editor.apply();
     }
@@ -147,27 +147,27 @@ public class CaloriesCalculator {
         return value;
     }
 
-    public void SetSharedPreferencesForExcersise(String name, Boolean value)
+    public void SetSharedPreferencesForExcersise(String name, Boolean value, Context con)
     {
-        SharedPreferences.Editor editor = context.getSharedPreferences(ExerciseTag, MODE_PRIVATE).edit();
+        SharedPreferences.Editor editor = con.getSharedPreferences(ExerciseTag, MODE_PRIVATE).edit();
         editor.putBoolean(name, value);
         editor.apply();
     }
-    public boolean GetSharedPreferencesForExercise(String name)
+    public boolean GetSharedPreferencesForExercise(String name, Context con)
     {
-        SharedPreferences pref = context.getSharedPreferences(ExerciseTag, MODE_PRIVATE);
+        SharedPreferences pref = con.getSharedPreferences(ExerciseTag, MODE_PRIVATE);
         boolean value = pref.getBoolean(name, false);
         return value;
     }
 
     public void ResetSharedPreferences()
     {
-        SetSharedPreferencesForExcersise(squats, false);
-        SetSharedPreferencesForExcersise(jumpingJack, false);
-        SetSharedPreferencesForExcersise(mountainClimbers, false);
-        SetSharedPreferencesForExcersise(burpees, false);
-        SetSharedPreferencesForExcersise(pushups, false);
-        SetSharedPreferencesForExcersise(situps, false);
+        SetSharedPreferencesForExcersise(squats, false, context);
+        SetSharedPreferencesForExcersise(jumpingJack, false, context);
+        SetSharedPreferencesForExcersise(mountainClimbers, false, context);
+        SetSharedPreferencesForExcersise(burpees, false, context);
+        SetSharedPreferencesForExcersise(pushups, false, context);
+        SetSharedPreferencesForExcersise(situps, false, context);
     }
 
 
@@ -175,22 +175,22 @@ public class CaloriesCalculator {
     {
         int exercises = 0;
 
-        if(GetSharedPreferencesForExercise(squats))
+        if(GetSharedPreferencesForExercise(squats, context))
             exercises++;
 
-        if(GetSharedPreferencesForExercise(jumpingJack))
+        if(GetSharedPreferencesForExercise(jumpingJack, context))
             exercises++;
 
-        if(GetSharedPreferencesForExercise(mountainClimbers))
+        if(GetSharedPreferencesForExercise(mountainClimbers, context))
             exercises++;
 
-        if(GetSharedPreferencesForExercise(burpees))
+        if(GetSharedPreferencesForExercise(burpees, context))
             exercises++;
 
-        if(GetSharedPreferencesForExercise(pushups))
+        if(GetSharedPreferencesForExercise(pushups, context))
             exercises++;
 
-        if(GetSharedPreferencesForExercise(situps))
+        if(GetSharedPreferencesForExercise(situps, context))
             exercises++;
 
         return exercises;

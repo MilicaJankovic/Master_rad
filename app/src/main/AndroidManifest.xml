@@ -30,7 +30,7 @@
         <uses-library android:name="com.google.android.maps" />
 
         <service
-            android:name=".SensorService"
+            android:name=".Services.SensorService"
             android:enabled="true"></service>
 
         <!--<receiver-->
@@ -43,7 +43,7 @@
         <!--</intent-filter>-->
         <!--</receiver>-->
 
-        <receiver android:name=".SensorService$MyBroadCastReciever">
+        <receiver android:name=".Services.SensorService$MyBroadCastReciever">
             <intent-filter>
             <action android:name="android.intent.action.SCREEN_ON" />
             <action android:name="android.intent.action.SCREEN_OFF" />
@@ -51,7 +51,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".SensorService$NotificationReceiver"></receiver>
+        <receiver android:name=".Services.SensorService$NotificationReceiver"></receiver>
 
         <activity
             android:name=".MainActivity"
@@ -71,7 +71,7 @@
             <!--android:value=".ConfigureProfile" />-->
         </activity>
         <activity
-            android:name=".FirebaseLogin"
+            android:name=".DBMaintenance.FirebaseLogin"
             android:label="@string/title_activity_firebase_login"
             android:theme="@style/AppTheme.NoActionBar">
 
@@ -103,16 +103,16 @@
         </activity>
         <activity
             android:name=".ConfigureProfile"
-            android:parentActivityName=".FirebaseLogin"
+            android:parentActivityName=".DBMaintenance.FirebaseLogin"
             android:theme="@style/AppTheme.NoActionBar">
             <!-- The meta-data tag is required if you support API level 15 and lower -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".FirebaseLogin" />
+                android:value=".DBMaintenance.FirebaseLogin" />
         </activity>
 
-        <service android:name=".ActivityRecognizedService" />
-        <service android:name=".BackgroundService" />
+        <service android:name=".Services.ActivityRecognizedService" />
+        <service android:name=".Services.BackgroundService" />
 
         <activity
             android:name="com.facebook.FacebookActivity"

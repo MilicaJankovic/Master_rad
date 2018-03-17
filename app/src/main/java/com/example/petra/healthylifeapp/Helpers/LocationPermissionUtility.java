@@ -1,14 +1,13 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.Helpers;
 
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.example.petra.healthylifeapp.MainActivity;
 
 /**
  * Created by Petra on 2/26/2018.

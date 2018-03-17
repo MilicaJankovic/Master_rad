@@ -1,4 +1,4 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.Services;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

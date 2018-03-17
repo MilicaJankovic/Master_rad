@@ -14,7 +14,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.StringDef;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
@@ -24,13 +23,19 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.example.petra.healthylifeapp.DBMaintenance.FeedReaderDbHelper;
+import com.example.petra.healthylifeapp.DBMaintenance.FirebaseLogin;
+import com.example.petra.healthylifeapp.DBMaintenance.FirebaseUtility;
+import com.example.petra.healthylifeapp.DBMaintenance.HTTPHelper;
+import com.example.petra.healthylifeapp.DBMaintenance.UserActivityProperties;
+import com.example.petra.healthylifeapp.Helpers.CaloriesCalculator;
+import com.example.petra.healthylifeapp.Services.BackgroundService;
+import com.example.petra.healthylifeapp.Services.SensorService;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
@@ -70,7 +75,6 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements OnDataPointListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
@@ -106,16 +110,19 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     private int StepsGoal = 10000;
 
-    public Context getCtx() {
-        return ctx;
+    public  Context getCtx() {
+        return this.getApplicationContext();
     }
 
-    CheckBox squats;
-    CheckBox jumping;
-    CheckBox climbers;
-    CheckBox burpees;
-    CheckBox pushups;
-    CheckBox situps;
+
+    public static CheckBox squats;
+    public static CheckBox jumping;
+    public static CheckBox climbers;
+    public static  CheckBox burpees;
+    public static CheckBox pushups;
+    public static CheckBox situps;
+    public static TextView textViewSteps;
+
     String userWeight;
     String userHeight;
     private boolean numberOfExercisesSet = false;
@@ -128,6 +135,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mSensorService = new SensorService(this);
+
         mApiClient = new GoogleApiClient.Builder(MainActivity.this)
                 .addApi(Fitness.SENSORS_API)
                 .addApi(Fitness.RECORDING_API)
@@ -152,10 +162,10 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        mDbHelper = new FeedReaderDbHelper(getApplicationContext());
+     //   mDbHelper = new FeedReaderDbHelper(getApplicationContext());
      //   mDbHelper.DeleteTable();
    //     mDbHelper.CreateTable();
-        InitializeDB();
+      //  InitializeDB();
 //        BackgroundService service = new BackgroundService();
 //        BackgroundService.FenceReceiver receiver = service.new FenceReceiver();
 //        BackgroundService.FenceReceiver receiver = new BackgroundService.FenceReceiver();
@@ -202,7 +212,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         };
 
         t.start();
-        /************************END STEPS*********************************/
+//        /************************END STEPS*********************************/
+//
+
         }
 
         //get user locations from firebase
@@ -247,23 +259,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         Button buttonCalendar = (Button) findViewById(R.id.button_showCalendar);
         buttonCalendar.setOnClickListener(this);
 
-        squats = (CheckBox)findViewById(R.id.rbtn_squat);
-        squats.setOnClickListener(this);
 
-        jumping = (CheckBox)findViewById(R.id.rbtn_jumping);
-        jumping.setOnClickListener(this);
-
-        climbers = (CheckBox)findViewById(R.id.rbtn_mountain);
-        climbers.setOnClickListener(this);
-
-        burpees = (CheckBox)findViewById(R.id.rbtn_burpees);
-        burpees.setOnClickListener(this);
-
-        pushups = (CheckBox)findViewById(R.id.rbtn_pushups);
-        pushups.setOnClickListener(this);
-
-        situps = (CheckBox)findViewById(R.id.rbtn_situps);
-        situps.setOnClickListener(this);
+        textViewSteps = (TextView) findViewById(R.id.title_text_view);
 
 
 
@@ -323,6 +320,9 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
 //        SaveUserLocation("45.32;12.23");
 //        SaveUserLocation("45:33;12:34");
+
+
+
     }
 
     @Override
@@ -361,15 +361,35 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
         detectWeather();
 
-        mSensorService = new SensorService(getApplicationContext());
+
         mServiceIntent = new Intent(getApplicationContext(), mSensorService.getClass());
         if (!isMyServiceRunning(mSensorService.getClass())) {
             startService(mServiceIntent);
+
         }
-        if(!userWeight.equals("") && !userHeight.equals(""))
-            calculator = new CaloriesCalculator(this, Double.valueOf(userWeight), Double.valueOf(userHeight));
-        else
-            calculator = new CaloriesCalculator(this, 1, 1);
+
+//        if(!userWeight.equals("") && !userHeight.equals(""))
+//            calculator = new CaloriesCalculator(this, Double.valueOf(userWeight), Double.valueOf(userHeight));
+//        else
+//            calculator = new CaloriesCalculator(this, 1, 1);
+//
+          squats = (CheckBox)findViewById(R.id.rbtn_squat);
+          squats.setOnClickListener(this);
+//
+          jumping = (CheckBox)findViewById(R.id.rbtn_jumping);
+          jumping.setOnClickListener(this);
+//
+          climbers = (CheckBox)findViewById(R.id.rbtn_mountain);
+          climbers.setOnClickListener(this);
+//
+          burpees = (CheckBox)findViewById(R.id.rbtn_burpees);
+          burpees.setOnClickListener(this);
+//
+          pushups = (CheckBox)findViewById(R.id.rbtn_pushups);
+          pushups.setOnClickListener(this);
+
+          situps = (CheckBox)findViewById(R.id.rbtn_situps);
+          situps.setOnClickListener(this);
 
         InitializeCheckBoxes();
     }
@@ -425,7 +445,7 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                     txtWeather.append("It's icy! Carefull ride!");
                                     break;
                             }
-                            txtWeather.append("Calories: " + String.valueOf(calculator.CalculateCaloriesBurnedByDoingExercises()));
+                            //txtWeather.append("Calories: " + String.valueOf(calculator.CalculateCaloriesBurnedByDoingExercises()));
                         }
 
                     }
@@ -581,11 +601,11 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                             }
                         });
     }
-
-    /**
-     * Reads the current daily step total, computed from midnight of the current day on the device's
-     * current timezone.
-     */
+//
+//    /**
+//     * Reads the current daily step total, computed from midnight of the current day on the device's
+//     * current timezone.
+//     */
     private String readData() {
         final String[] totalSteps = {""};
 
@@ -600,8 +620,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                                                 ? 0
                                                 : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
                                 //   Log.i(TAG, "Total steps: " + total);
-                                ShowNumberOfSteps(String.valueOf(total));
-                                calculator.SetNumberOfSteps(total);
+                                ShowNumberOfSteps(total);
+                                mSensorService.calculator.SetNumberOfSteps(total, getCtx());
                                 //notificationCounter is here to provide sending notfication for this event only once
                                 SharedPreferences prefs = getSharedPreferences("StepsGoalNotification", MODE_PRIVATE);
                                 Boolean firedToday = prefs.getBoolean("FiredToday", false);
@@ -626,11 +646,11 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
     }
 
-    public void ShowNumberOfSteps(String steps) {
-        TextView textViewSteps = (TextView) findViewById(R.id.title_text_view);
-        if (textViewSteps.getText() != steps && steps != "")
-            textViewSteps.setText(steps);
-
+    public void ShowNumberOfSteps(long total) {
+        TextView textSteps = (TextView) findViewById(R.id.title_text_view);
+        String steps = String.valueOf(total);
+        if (textSteps.getText() != steps && steps != "")
+            textSteps.setText(steps);
     }
 /****************************************END STEP METHODS**************************************************/
 
@@ -650,6 +670,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         Intent calendar = new Intent(MainActivity.this, CalendarActivity.class);
         Bundle b = new Bundle();
         b.putString("steps", textViewSteps.getText().toString());
+//        b.putString("weight", userWeight);
+//        b.putString("height", userHeight);
         calendar.putExtras(b); //parameter to next Intent
         startActivity(calendar);
     }
@@ -714,7 +736,51 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 return super.onOptionsItemSelected(item);
         }
     }
-
+//    public void onCheckboxClicked(View view) {
+//        // Is the view now checked?
+//        boolean checked = ((CheckBox) view).isChecked();
+//
+//        // Check which checkbox was clicked
+//        switch(view.getId()) {
+//            case R.id.rbtn_squat:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, false);
+//                break;
+//            case R.id.rbtn_situps:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, false);
+//                break;
+//            case R.id.rbtn_jumping:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, false);
+//                break;
+//            case R.id.rbtn_burpees:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, false);
+//                break;
+//            case R.id.rbtn_mountain:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, false);
+//                break;
+//            case R.id.rbtn_pushups:
+//                if (checked)
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, true);
+//                else
+//                    mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, false);
+//                break;
+//            // TODO: Veggie sandwich
+//        }
+//    }
     @Override
     public void onClick(View v) {
         int i = v.getId();
@@ -726,61 +792,61 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
         else if (i == R.id.rbtn_squat) {
          //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(squats.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.squats,false,  this);
             }
         }
         else if (i == R.id.rbtn_jumping) {
             //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(jumping.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.jumpingJack, false, this);
             }
         }
         else if (i == R.id.rbtn_mountain) {
             //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(climbers.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.mountainClimbers, false, this);
             }
         }
         else if (i == R.id.rbtn_burpees) {
             //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(burpees.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.burpees, false, this);
             }
         }
         else if (i == R.id.rbtn_pushups) {
             //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(pushups.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.pushups, false, this);
             }
         }
         else if (i == R.id.rbtn_situps) {
             //   CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
             if(situps.isChecked()) {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, true);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, true, this);
             }
             else
             {
-                calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, false);
+                mSensorService.calculator.SetSharedPreferencesForExcersise(CaloriesCalculator.situps, false, this);
             }
         }
 
@@ -845,27 +911,27 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
     private void InitializeCheckBoxes()
     {
 
-        boolean checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.squats);
+        boolean checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.squats, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         squats.setChecked(checked);
 
-        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.jumpingJack);
+        checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.jumpingJack, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         jumping.setChecked(checked);
 
-        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.mountainClimbers);
+        checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.mountainClimbers, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         climbers.setChecked(checked);
 
-        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.burpees);
+        checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.burpees, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         burpees.setChecked(checked);
 
-        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.pushups);
+        checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.pushups, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         pushups.setChecked(checked);
 
-        checked = calculator.GetSharedPreferencesForExercise(CaloriesCalculator.situps);
+        checked = mSensorService.calculator.GetSharedPreferencesForExercise(CaloriesCalculator.situps, this);
         //CheckBox squats = (CheckBox)findViewById(R.id.rbtn_squat);
         situps.setChecked(checked);
     }

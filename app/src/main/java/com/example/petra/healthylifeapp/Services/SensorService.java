@@ -1,11 +1,10 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.Services;
 
 /**
  * Created by Milica on 2/18/2018.
  */
 
 import android.annotation.SuppressLint;
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,8 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -28,16 +25,22 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
-import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.CheckBox;
 import android.widget.RemoteViews;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.example.petra.healthylifeapp.DBMaintenance.FeedReaderDbHelper;
+import com.example.petra.healthylifeapp.DBMaintenance.FirebaseUtility;
+import com.example.petra.healthylifeapp.Helpers.CaloriesCalculator;
+import com.example.petra.healthylifeapp.Helpers.LocationPermissionUtility;
+import com.example.petra.healthylifeapp.MainActivity;
+import com.example.petra.healthylifeapp.DBMaintenance.NetworkAsyncTask;
+import com.example.petra.healthylifeapp.R;
+import com.example.petra.healthylifeapp.DBMaintenance.UserActivityProperties;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.DetectedActivityResult;
 import com.google.android.gms.awareness.snapshot.LocationResult;
@@ -49,21 +52,22 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.data.DataSet;
+import com.google.android.gms.fitness.data.DataType;
+import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.lang.reflect.Array;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -71,7 +75,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -121,6 +124,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private Double driving = 0.0;
     private int weatherConditionGlobal = 0;
 
+
+    private long stepsCount = 0;
+    String userWeight;
+    String userHeight;
+    private Context appContext;
     //region nootification flags
     boolean flagAtHome = false;
     boolean flagDriving = false;
@@ -130,9 +138,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     //endregion
 
 
+    CheckBox squats;
+    CheckBox jumping;
+    CheckBox climbers;
+    CheckBox burpees;
+    CheckBox pushups;
+    CheckBox situps;
+    TextView txtSteps;
+
+    public CaloriesCalculator calculator = new CaloriesCalculator(this, 1,1) ;
+
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
+      //  appContext = this;
 
     }
 
@@ -145,6 +164,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         super.onCreate();
         instance = this;
         mDbHelper = new FeedReaderDbHelper(getApplicationContext());
+        appContext = this;
 
         if (FirebaseUtility.getUser() != null) {
             //startTimer();
@@ -176,6 +196,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
                         userSleep = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
                         targetWeight = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
+
+                        userWeight = FirebaseUtility.getUserProperty(dataSnapshot, "weight");
+                        userHeight = FirebaseUtility.getUserProperty(dataSnapshot, "height");
+
+                        if(!userWeight.equals("") && !userHeight.equals(""))
+                            calculator = new CaloriesCalculator(appContext, Double.valueOf(userWeight), Double.valueOf(userHeight));
+                        else
+                            calculator = new CaloriesCalculator(appContext, 1, 1);
+
+
+
+                     //   ShowNumberOfSteps(MainActivity.textViewSteps);
+                      //  InitializeCheckBoxes(MainActivity.squats, MainActivity.jumping, MainActivity.climbers, MainActivity.burpees, MainActivity.pushups, MainActivity.situps);
+                      //  calculator.SetSharedPreferencesForExcersise("BLA", false, appContext);
                     }
 
                     @Override
@@ -194,10 +228,9 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             vehicleNotification = false;
             weatherConditionGlobal = MainActivity.returnWeatherConditon();
         }
-
+       // readData();
         SetLightSensor();
     }
-
 
     protected void SetLightSensor() {
         // Obtain references to the SensorManager and the Light Sensor
@@ -309,11 +342,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                if (currentHour != 24 && locationReset) {
 //                    locationReset = false;
 //                }
-//                if (currentHour == 2 && currentMinute == 6) {
-//                   MainActivity.calculator.ResetSharedPreferences();
-//                     //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
-//                    FirebaseUtility.ResetUserLocations();
-//                }
+                if (currentHour == 2 && currentMinute == 33) {
+                    calculator.ResetSharedPreferences();
+                     //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+                    FirebaseUtility.ResetUserLocations();
+                }
 
                 Long stepsCount = null;
                 SharedPreferences prefs = getSharedPreferences("StepsCount", MODE_PRIVATE);
@@ -338,10 +371,10 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         //CaloriesCalculator calculator = new CaloriesCalculator(90, 184, Double.valueOf(stepsCount));
                         //Date yesterday = new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L);
                         String date = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
-                        FirebaseUtility.saveUserCaolries(date, MainActivity.calculator.CalculateCaloriesBurnedBySteps(), userCalories);
+                        FirebaseUtility.saveUserCaolries(date, calculator.CalculateCaloriesBurnedBySteps() + calculator.CalculateCaloriesBurnedByDoingExercises(), userCalories);
                     }
                     FirebaseUtility.ResetUserLocations();
-                    MainActivity.calculator.ResetSharedPreferences();
+                    calculator.ResetSharedPreferences();
 
                     locationReset = true;
                     todayStill = 0.0;
@@ -355,18 +388,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
-
-                if( MainActivity.calculator.checkExcersises() <= 0 && !flagTraining)
+               // readData();
+                if(calculator.checkExcersises() <= 0 && !flagTraining)
                 {
                     startNotification("Hey! It's time for training, do some exercises?", "doExercises");
                     flagTraining = true;
                 }
 
-                if(currentHour > 8 && currentHour < 12)
+                if(FirebaseUtility.getPartOfTheDay().equals("Morning"))
                 {
                     startNotification("Hey! It's morning, are you awake?", "getUp");
                 }
-                if(currentHour > 22 && currentHour < 2)
+                if(FirebaseUtility.getPartOfTheDay().equals("Night") && (currentHour > 22 ||  currentHour < 2))
                 {
                     startNotification("Hey! It's evening, are you going to sleep?", "goToBad");
                 }
@@ -436,12 +469,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         }
                         else{
                             //to send it when register it
+
+                            // AJDE DA IZBACIMO OVO :D
                             if(!flagAtHome) {
                                 int weatherCondition = weatherConditionGlobal;
                                 if (weatherCondition != -1) {
                                     switch (weatherCondition) {
                                         case 0:
-                                            startNotification("Are you at home?", "atHome");
+                                            //startNotification("Are you at home?", "atHome");
                                             break;
                                         case Weather.CONDITION_CLOUDY:
                                             startNotification("Are you at home? It is cloudy, it may start raining!", "atHome");
@@ -474,7 +509,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(ns);
-
+        notificationType = notType;
         Notification notification = new Notification(R.mipmap.ic_launcher, null,
                 System.currentTimeMillis());
 
@@ -748,12 +783,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return weatherCondition[0];
     }
 
+    private void SetSharedPreferenceLong(String key, Long value)
+    {
+        SharedPreferences.Editor editor = getSharedPreferences(key, MODE_PRIVATE).edit();
+        editor.putLong(key, value);
+        editor.apply();
+    }
     private void saveNotificationDataToSQLLite(int userInput) {
         UserActivityProperties uap = new UserActivityProperties();
         uap.setAge(userAge);
 
         //calories, blah
-        Double myDouble = MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+        Double myDouble = calculator.CalculateCaloriesBurnedBySteps();
         Integer val = Integer.valueOf(myDouble.intValue());
         uap.setCalories(Integer.valueOf(val.intValue()));
 
@@ -815,6 +856,16 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         editor.putString(key, value);
         editor.apply();
     }
+
+    public long getStepsCount() {
+        return stepsCount;
+    }
+
+    public void setStepsCount(long stepsCount) {
+        this.stepsCount = stepsCount;
+    }
+
+
 
     public static class NotificationReceiver extends BroadcastReceiver {
 

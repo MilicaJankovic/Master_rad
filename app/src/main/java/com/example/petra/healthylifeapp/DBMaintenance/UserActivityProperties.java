@@ -1,7 +1,4 @@
-package com.example.petra.healthylifeapp;
-
-import java.text.DateFormat;
-import java.util.Date;
+package com.example.petra.healthylifeapp.DBMaintenance;
 
 /**
  * Created by Milica on 3/7/2018.

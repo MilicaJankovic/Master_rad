@@ -1,11 +1,5 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.DBMaintenance;
 
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v7.app.NotificationCompat;
-
-import com.google.android.gms.vision.barcode.Barcode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -21,7 +15,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Created by Petra on 2/24/2018.

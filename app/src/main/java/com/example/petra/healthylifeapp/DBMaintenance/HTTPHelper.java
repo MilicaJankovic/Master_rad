@@ -1,4 +1,4 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.DBMaintenance;
 
 import android.net.Uri;
 
@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 
 public class HTTPHelper {
-    public static String SERVER_URL = "http://192.168.0.13:8080/";
+    public static String SERVER_URL = "http://192.168.0.15:8080/";
 
 
     //insert one element to SQL database on server

@@ -1,7 +1,6 @@
-package com.example.petra.healthylifeapp;
+package com.example.petra.healthylifeapp.DBMaintenance;
 
 import android.os.AsyncTask;
-import android.support.annotation.RequiresPermission;
 import android.util.Log;
 
 import java.util.List;
