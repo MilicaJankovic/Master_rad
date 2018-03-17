@@ -11,8 +11,8 @@
         android:title="Google Setup"
         app:showAsAction="collapseActionView" />
 
-    <item
-        android:id="@+id/logout"
-        android:title="Logout"
-        app:showAsAction="collapseActionView" />
+    <!--<item-->
+        <!--android:id="@+id/logout"-->
+        <!--android:title="Logout"-->
+        <!--app:showAsAction="collapseActionView" />-->
 </menu>

@@ -137,15 +137,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     boolean flagTraining = false;
     //endregion
 
-
-    CheckBox squats;
-    CheckBox jumping;
-    CheckBox climbers;
-    CheckBox burpees;
-    CheckBox pushups;
-    CheckBox situps;
-    TextView txtSteps;
-
     public CaloriesCalculator calculator = new CaloriesCalculator(this, 1,1) ;
 
     public SensorService(Context applicationContext) {
