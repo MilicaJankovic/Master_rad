@@ -56,6 +56,9 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
         Button btnSave = (Button) findViewById(R.id.btnSave);
         btnSave.setOnClickListener(this);
 
+        Button btnBack = (Button) findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(this);
+
         if (getUser() == null) {
             Intent intent = new Intent(this, FirebaseLogin.class);
             startActivity(intent);
@@ -96,64 +99,66 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
             if (ds.child(UserID).getValue() != null) {
                 user = (HashMap<String, Object>) ds.child(UserID).getValue();
 
-                txtUsername.setText(user.get("username").toString());
-                txtHeight.setText(user.get("height").toString());
-                txtWeight.setText(user.get("weight").toString());
-                txtBirthDate.setText(user.get("birthDate").toString());
+                if (!user.get("username").toString().equals("")) {
+                    txtUsername.setText(user.get("username").toString());
+                    txtHeight.setText(user.get("height").toString());
+                    txtWeight.setText(user.get("weight").toString());
+                    txtBirthDate.setText(user.get("birthDate").toString());
 
-                RadioButton button = new RadioButton(this);
+                    RadioButton button = new RadioButton(this);
 
-                switch (user.get("achivement").toString()) {
-                    case "Keep Weight":
-                        button = (RadioButton) findViewById(R.id.radioKeepWeight);
-                        break;
-                    case "Lose Weight":
-                        button = (RadioButton) findViewById(R.id.radioLoseWeight);
-                        break;
-                    case "Gain Weight":
-                        button = (RadioButton) findViewById(R.id.radioGainWeight);
-                        break;
-                }
-
-                button.setChecked(true);
-
-                RadioButton button1 = new RadioButton(this);
-                switch (user.get("gender").toString()) {
-                    case "Male":
-                        button1 = (RadioButton) findViewById(R.id.radioMale);
-                        break;
-                    case "Female":
-                        button1 = (RadioButton) findViewById(R.id.radioFemale);
-                        break;
-                }
-
-                button1.setChecked(true);
-
-                RadioButton button2 = new RadioButton(this);
-                Long stepsGoal = Long.parseLong(user.get("stepsGoal").toString());
-                if(stepsGoal != null) {
-                    switch (Integer.parseInt(stepsGoal.toString())) {
-                        case 5000:
-                            button2 = (RadioButton) findViewById(R.id.radio5000);
+                    switch (user.get("achivement").toString()) {
+                        case "Keep Weight":
+                            button = (RadioButton) findViewById(R.id.radioKeepWeight);
                             break;
-                        case 10000:
-                            button2 = (RadioButton) findViewById(R.id.radio10000);
+                        case "Lose Weight":
+                            button = (RadioButton) findViewById(R.id.radioLoseWeight);
                             break;
-                        case 15000:
-                            button2 = (RadioButton) findViewById(R.id.radio15000);
-                            break;
-                        default:
-                            button2 = (RadioButton) findViewById(R.id.radio10000);
+                        case "Gain Weight":
+                            button = (RadioButton) findViewById(R.id.radioGainWeight);
                             break;
                     }
+
+                    button.setChecked(true);
+
+                    RadioButton button1 = new RadioButton(this);
+                    switch (user.get("gender").toString()) {
+                        case "Male":
+                            button1 = (RadioButton) findViewById(R.id.radioMale);
+                            break;
+                        case "Female":
+                            button1 = (RadioButton) findViewById(R.id.radioFemale);
+                            break;
+                    }
+
+                    button1.setChecked(true);
+
+                    RadioButton button2 = new RadioButton(this);
+                    Long stepsGoal = Long.parseLong(user.get("stepsGoal").toString());
+                    if (stepsGoal != null) {
+                        switch (Integer.parseInt(stepsGoal.toString())) {
+                            case 5000:
+                                button2 = (RadioButton) findViewById(R.id.radio5000);
+                                break;
+                            case 10000:
+                                button2 = (RadioButton) findViewById(R.id.radio10000);
+                                break;
+                            case 15000:
+                                button2 = (RadioButton) findViewById(R.id.radio15000);
+                                break;
+                            default:
+                                button2 = (RadioButton) findViewById(R.id.radio10000);
+                                break;
+                        }
+                    }
+
+                    button2.setChecked(true);
+
+                } else {
+                    //10000 by default
+                    RadioButton button3 = (RadioButton) findViewById(R.id.radio10000);
+                    button3.setChecked(true);
                 }
-
-                button2.setChecked(true);
-
-            } else {
-                //10000 by default
-                RadioButton button3 = (RadioButton) findViewById(R.id.radio10000);
-                button3.setChecked(true);
             }
         }
     }
@@ -199,7 +204,10 @@ public class ConfigureProfile extends AppCompatActivity implements View.OnClickL
             Toast toast = Toast.makeText(this, "You successfully configured your user profile!", Toast.LENGTH_SHORT);
             toast.show();
 
-            Intent mainIntent = new Intent(this, MainActivity.class);
+            Intent mainIntent = new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(mainIntent);
+        } else if (i == R.id.btnBack) {
+            Intent mainIntent = new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(mainIntent);
         }
     }

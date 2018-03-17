@@ -76,6 +76,8 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
         findViewById(R.id.sign_out_button).setOnClickListener(this);
         findViewById(R.id.disconnect_button).setOnClickListener(this);
         findViewById(R.id.login_button).setOnClickListener(this);
+        findViewById(R.id.btnCustomLogin).setOnClickListener(this);
+        findViewById(R.id.btnCustomSignUp).setOnClickListener(this);
 
         // [START config_signin]
         // Configure Google Sign In
@@ -110,8 +112,7 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
     }
 
 
-    protected void ParseFacebook()
-    {
+    protected void ParseFacebook() {
         // Initialize Facebook Login button
         mCallbackManager = CallbackManager.Factory.create();
         LoginButton loginButton = (LoginButton) findViewById(R.id.login_button);
@@ -189,10 +190,6 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account);
-
-                //start MainActivity after login
-                Intent intent = new Intent(this, ConfigureProfile.class);
-                startActivity(intent);
             } catch (ApiException e) {
                 // Google Sign In failed, update UI appropriately
                 Log.w(TAG, "Google sign in failed", e);
@@ -200,8 +197,7 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
                 updateUI(null);
                 // [END_EXCLUDE]
             }
-        }
-        else{
+        } else {
             // Pass the activity result back to the Facebook SDK
             mCallbackManager.onActivityResult(requestCode, resultCode, data);
         }
@@ -225,6 +221,10 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
                             Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             updateUI(user);
+
+                            //start ConfigureProfile after login
+                            Intent intent = new Intent(FirebaseLogin.this, ConfigureProfile.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(intent);
                         } else {
                             // If sign in fails, display a message to the user.
                             Log.w(TAG, "signInWithCredential:failure", task.getException());
@@ -235,6 +235,65 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
                         // [START_EXCLUDE]
                         hideProgressDialog();
                         // [END_EXCLUDE]
+                    }
+                });
+    }
+
+
+    private void signUpWithEmailAndPassword(String email, String password) {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            showProgressDialog();
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d(TAG, "createUserWithEmail:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            updateUI(user);
+
+                            //start MainActivity after login
+                            Intent intent = new Intent(FirebaseLogin.this, ConfigureProfile.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(intent);
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w(TAG, "createUserWithEmail:failure", task.getException());
+                            Toast.makeText(FirebaseLogin.this, "Authentication failed. Message: " + task.getException().getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                            updateUI(null);
+                            hideProgressDialog();
+                        }
+
+                        // ...
+                    }
+                });
+    }
+
+    private void logInWithEmailAndPassword(String email, String password) {
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d(TAG, "signInWithEmail:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            updateUI(user);
+                            showProgressDialog();
+
+                            //start MainActivity after login
+                            Intent intent = new Intent(FirebaseLogin.this, ConfigureProfile.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(intent);
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w(TAG, "signInWithEmail:failure", task.getException());
+                            Toast.makeText(FirebaseLogin.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                            updateUI(null);
+                            hideProgressDialog();
+                        }
+
+                        // ...
                     }
                 });
     }
@@ -309,13 +368,31 @@ public class FirebaseLogin extends AppCompatActivity implements View.OnClickList
             signIn();
         } else if (i == R.id.sign_out_button) {
             signOut();
-        }
-        else if (i == R.id.disconnect_button) {
+        } else if (i == R.id.disconnect_button) {
             revokeAccess();
-        }
-        else if (i == R.id.login_button) {
+        } else if (i == R.id.login_button) {
             ParseFacebook();
-                    }
+        } else if (i == R.id.btnCustomSignUp) {
+            TextView txtEmail = (TextView) findViewById(R.id.txtEmail);
+            TextView txtPassword = (TextView) findViewById(R.id.txtPassword);
+
+            if (!txtEmail.getText().equals("") && !txtPassword.getText().equals("")) {
+                signUpWithEmailAndPassword(txtEmail.getText().toString(), txtPassword.getText().toString());
+            } else {
+                Toast.makeText(FirebaseLogin.this, "You need to specify username and password fields!",
+                        Toast.LENGTH_SHORT).show();
+            }
+        } else if (i == R.id.btnCustomLogin) {
+            TextView txtEmail = (TextView) findViewById(R.id.txtEmail);
+            TextView txtPassword = (TextView) findViewById(R.id.txtPassword);
+
+            if (!txtEmail.getText().equals("") && !txtPassword.getText().equals("")) {
+                logInWithEmailAndPassword(txtEmail.getText().toString(), txtPassword.getText().toString());
+            } else {
+                Toast.makeText(FirebaseLogin.this, "You need to specify username and password fields!",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
 }

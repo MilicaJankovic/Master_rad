@@ -183,10 +183,18 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
                         userAge = FirebaseUtility.CalculateAge(dataSnapshot);
 
-                        stepsGoal = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
+                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal").equals("")) {
+                            stepsGoal = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
+                        }
                         userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
-                        userSleep = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
-                        targetWeight = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
+
+                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "sleep").equals("")) {
+                            userSleep = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
+                        }
+
+                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "weight").equals("")) {
+                            targetWeight = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
+                        }
 
                         userWeight = FirebaseUtility.getUserProperty(dataSnapshot, "weight");
                         userHeight = FirebaseUtility.getUserProperty(dataSnapshot, "height");

@@ -36,7 +36,11 @@ import com.example.petra.healthylifeapp.DBMaintenance.UserActivityProperties;
 import com.example.petra.healthylifeapp.Helpers.CaloriesCalculator;
 import com.example.petra.healthylifeapp.Services.BackgroundService;
 import com.example.petra.healthylifeapp.Services.SensorService;
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.awareness.Awareness;
 import com.google.android.gms.awareness.snapshot.WeatherResult;
 import com.google.android.gms.awareness.state.Weather;
@@ -61,6 +65,7 @@ import com.google.android.gms.fitness.result.ListSubscriptionsResult;
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.plus.Plus;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -728,6 +733,23 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                 // as a favorite...
                 Intent configure = new Intent(this, ConfigureProfile.class);
                 startActivity(configure);
+                return true;
+
+            case R.id.logout:
+                // User chose the "configure profile, this page" action, mark the current item
+                // as a favorite...
+                mAuth.getInstance().signOut();
+
+                //google sign out
+                if (mApiClient.isConnected()) {
+                    //Auth.GoogleSignInApi.signOut(mApiClient);
+                    //Plus.AccountApi.clearDefaultAccount(mApiClient);
+                    mApiClient.disconnect();
+//                    mApiClient.connect();
+                }
+
+                Intent login = new Intent(this, FirebaseLogin.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(login);
                 return true;
 
             default:
