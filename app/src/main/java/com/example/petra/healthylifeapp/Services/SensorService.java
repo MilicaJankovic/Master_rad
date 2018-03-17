@@ -90,7 +90,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     //region UserProperties for database
     public int TimeStill = 0;
     public int TimeWalking = 0;
-    public long userSleepTime = 0;
+    public Long userSleepTime = 0L;
     FeedReaderDbHelper mDbHelper;
     //firebase
     private FirebaseAuth mAuth;
@@ -118,7 +118,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private int stepsGoal = 10000;
     private String notificationType = "";
     private String userGender = "";
-    private int userSleep = 0;
+//    private int userSleep = 0;
     private int targetWeight = 0;
     private Double cycling = 0.0;
     private Double driving = 0.0;
@@ -189,7 +189,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
 
                         if(!FirebaseUtility.getUserProperty(dataSnapshot, "sleep").equals("")) {
-                            userSleep = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"));
+                            userSleepTime = Long.valueOf(Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"))).longValue();
                         }
 
                         if(!FirebaseUtility.getUserProperty(dataSnapshot, "weight").equals("")) {
@@ -567,6 +567,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         builder.setContentTitle(getString(R.string.app_name));
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         builder.setSound(alarmSound);
+        builder.setLights(0xff00cc99, 300, 1000);
         long[] vibrate = {0, 100};
         builder.setVibrate(vibrate);
 
@@ -817,7 +818,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         uap.setStill(TimeStill);
         uap.setPartOfTheDay(FirebaseUtility.getPartOfTheDay());
         uap.setGender(userGender);
-        uap.setSleeping(userSleep);
+        uap.setSleeping(Integer.parseInt(userSleepTime.toString()));
         uap.setTargetWeight(targetWeight);
         uap.setNotificationType(notificationType);
         uap.setUserInput(userInput);
