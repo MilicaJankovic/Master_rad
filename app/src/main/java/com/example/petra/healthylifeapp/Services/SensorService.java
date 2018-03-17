@@ -225,7 +225,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
             locationReset = false;
             vehicleNotification = false;
-            weatherConditionGlobal = MainActivity.returnWeatherConditon();
+            //weatherConditionGlobal = MainActivity.returnWeatherConditon();
+            weatherConditionGlobal = detectWeather();
         }
        // readData();
         SetLightSensor();
@@ -527,10 +528,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         //notification.contentIntent = pendingNotificationIntent;
         notification.flags |= Notification.FLAG_AUTO_CANCEL;
+        notification.flags |= Notification.FLAG_SHOW_LIGHTS;
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         notification.sound = alarmSound;
         long[] vibrate = {0, 100};
         notification.vibrate = vibrate;
+        notification.ledARGB = 0xff00cc99;
+        notification.ledOnMS = 300;
+        notification.ledOffMS = 1000;
 
         //this is the intent that is supposed to be called when the
         //button is clicked
@@ -646,12 +651,13 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             }
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
-                                cycling += 0.5;
-                                if(!flagCycling) {
-                                    startNotification("Are you going to cycling?.", "goToCycling");
-                                    flagCycling = true;
+                                if(probableActivity.getConfidence() > 75) {
+                                    cycling += 0.5;
+                                    if (!flagCycling) {
+                                        startNotification("Are you going to cycling?.", "goToCycling");
+                                        flagCycling = true;
+                                    }
                                 }
-
                                 flagRunning = false;
                                 break;
                             }
@@ -764,7 +770,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             return -1;
         }
 
-        final int[] weatherCondition = {0};
+        int weatherCondition = 0;
         Awareness.SnapshotApi.getWeather(mApiClient)
                 .setResultCallback(new ResultCallback<WeatherResult>() {
                     @Override
@@ -772,14 +778,14 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         Weather weather = weatherResult.getWeather();
 
                         if (weather != null) {
-
-                            weatherCondition[0] = weather.getConditions()[0];
-
+                            weatherConditionGlobal = weather.getConditions()[0];
                         }
                     }
                 });
 
-        return weatherCondition[0];
+
+        weatherCondition = weatherConditionGlobal;
+        return weatherCondition;
     }
 
     private void SetSharedPreferenceLong(String key, Long value)
