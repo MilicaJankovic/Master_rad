@@ -79,6 +79,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
+//import org.tensorflow.DataType;
+import org.tensorflow.Graph;
+import org.tensorflow.Session;
+import org.tensorflow.Tensor;
+import org.tensorflow.TensorFlow;
+
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     public static final String TAG = "StepCounter";
     private static final String SNOOZE_ACTION = "Snooze";
@@ -135,6 +142,30 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     boolean flagRunning = false;
     boolean flagCycling = false;
     boolean flagTraining = false;
+    boolean flagStepsGoal = false;
+    //endregion
+
+
+    //region TensorFlow
+//    static {
+//        System.loadLibrary("tensorflow_inference");
+//    }
+
+    private static final String MODEL_FILE = "E:\\MASTER\\PythonPrograms\\frozen_har.pb";
+    //private static final String INPUT_NODE = "I";
+    //private static final String OUTPUT_NODE = "O";
+
+    //private static final int[] INPUT_SIZE = {1,3};
+
+    String INPUT_NODE = "input";
+    String[] OUTPUT_NODES = {"y_"};
+    String OUTPUT_NODE = "y_";
+    //I don't know what is input size
+    long[] INPUT_SIZE = {1, 16};
+    int OUTPUT_SIZE = 2;
+
+    private TensorFlowInferenceInterface inferenceInterface;
+
     //endregion
 
     public CaloriesCalculator calculator = new CaloriesCalculator(this, 1,1) ;
@@ -207,8 +238,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
 
                      //   ShowNumberOfSteps(MainActivity.textViewSteps);
-                      //  InitializeCheckBoxes(MainActivity.squats, MainActivity.jumping, MainActivity.climbers, MainActivity.burpees, MainActivity.pushups, MainActivity.situps);
-                      //  calculator.SetSharedPreferencesForExcersise("BLA", false, appContext);
+//                        InitializeCheckBoxes(MainActivity.squats, MainActivity.jumping, MainActivity.climbers, MainActivity.burpees, MainActivity.pushups, MainActivity.situps);
+//                        calculator.SetSharedPreferencesForExcersise("BLA", false, appContext);
                     }
 
                     @Override
@@ -228,8 +259,30 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             //weatherConditionGlobal = MainActivity.returnWeatherConditon();
             weatherConditionGlobal = detectWeather();
         }
-       // readData();
+
+        //region TensorFlow
+
+        inferenceInterface = new TensorFlowInferenceInterface(appContext.getAssets(), MODEL_FILE);
+        //inferenceInterface.initializeTensorFlow(getAssets(), MODEL_FILE);
+
+        //endregion
+
+
         SetLightSensor();
+
+        //float[] bla = predictProbabilities();
+    }
+
+
+    public float[] predictProbabilities(float[] data) {
+        float[] result = new float[OUTPUT_SIZE];
+        inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
+        inferenceInterface.run(OUTPUT_NODES);
+        inferenceInterface.fetch(OUTPUT_NODE, result);
+
+        //for us it should be 0 or 1
+        //Downstairs	Jogging	  Sitting	Standing	Upstairs	Walking
+        return result;
     }
 
     protected void SetLightSensor() {
@@ -355,10 +408,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 }
 
                 //send notification about steps
-                if (FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14) {
+                if (FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14 && !flagStepsGoal) {
                     if (stepsCount != null) {
                         if (stepsCount < stepsGoal) {
                             startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!", "StepsGoal");
+                            flagStepsGoal = true;
                         }
                     }
                 }
@@ -381,6 +435,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     cycling = 0.0;
                     driving = 0.0;
                     flagTraining = false;
+                    flagStepsGoal = false;
                     //endregion
                 }
 
