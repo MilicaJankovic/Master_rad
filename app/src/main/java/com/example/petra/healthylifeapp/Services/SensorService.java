@@ -151,11 +151,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //        System.loadLibrary("tensorflow_inference");
 //    }
 
-    private static final String MODEL_FILE = "E:\\MASTER\\PythonPrograms\\frozen_har.pb";
-    //private static final String INPUT_NODE = "I";
-    //private static final String OUTPUT_NODE = "O";
-
-    //private static final int[] INPUT_SIZE = {1,3};
+    private static final String MODEL_FILE = "file:///assets/frozen_har.pb";
 
     String INPUT_NODE = "input";
     String[] OUTPUT_NODES = {"y_"};
