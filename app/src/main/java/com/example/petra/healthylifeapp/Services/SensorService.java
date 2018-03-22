@@ -80,11 +80,12 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
+
 //import org.tensorflow.DataType;
-import org.tensorflow.Graph;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
-import org.tensorflow.TensorFlow;
+//import org.tensorflow.Graph;
+//import org.tensorflow.Session;
+//import org.tensorflow.Tensor;
+//import org.tensorflow.TensorFlow;
 
 public class SensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     public static final String TAG = "StepCounter";
@@ -150,17 +151,23 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //    static {
 //        System.loadLibrary("tensorflow_inference");
 //    }
+    private TensorFlowInferenceInterface inferenceInterface;
 
-    private static final String MODEL_FILE = "file:///assets/frozen_har.pb";
+    static{
+    System.loadLibrary("tensorflow_inference");
+    }
+
+    private static final String MODEL_FILE = "file:///android_asset/optimized_frozen_har.pb";
 
     String INPUT_NODE = "input";
     String[] OUTPUT_NODES = {"y_"};
     String OUTPUT_NODE = "y_";
     //I don't know what is input size
-    long[] INPUT_SIZE = {1, 16};
+    long[] INPUT_SIZE = {1, 15};
     int OUTPUT_SIZE = 2;
 
-    private TensorFlowInferenceInterface inferenceInterface;
+
+    long[] data = {(long)1.0, (long)26.0,(long) 1200.0,(long) (long)1.0, (long)3.0,(long) 0.0,(long) 0.0,(long) 0.0,(long) 7.0, (long)0.0, (long)85.0, (long)525.0,(long) 4.0, (long)0,(long) 3.0};
 
     //endregion
 
@@ -254,15 +261,20 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             vehicleNotification = false;
             //weatherConditionGlobal = MainActivity.returnWeatherConditon();
             weatherConditionGlobal = detectWeather();
+
+            //predictProbabilities(data);
         }
 
         //region TensorFlow
+    //    inferenceInterface = new TensorFlowInferenceInterface();
+      //  inferenceInterface.initializeTensorFlow(getAssets(), MODEL_FILE);
+       // inferenceInterface = new TensorFlowInferenceInterface(appContext.getAssets(), MODEL_FILE);
 
-        inferenceInterface = new TensorFlowInferenceInterface(appContext.getAssets(), MODEL_FILE);
         //inferenceInterface.initializeTensorFlow(getAssets(), MODEL_FILE);
 
         //endregion
-
+      //  float[] data = {(float)1.0, (float)26.0,(float) 1200.0, (float)1.0, (float)3.0,(float) 0.0,(float) 0.0,(float) 0.0,(float) 7.0, (float)0.0, (float)85.0, (float)525.0,(float) 4.0, (float)0,(float) 3.0};
+       // predictProbabilities(data);
 
         SetLightSensor();
 
@@ -272,7 +284,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
     public float[] predictProbabilities(float[] data) {
         float[] result = new float[OUTPUT_SIZE];
-        inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
+        inferenceInterface.feed(INPUT_NODE, data,INPUT_SIZE);
         inferenceInterface.run(OUTPUT_NODES);
         inferenceInterface.fetch(OUTPUT_NODE, result);
 
@@ -452,7 +464,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 }
                 if(FirebaseUtility.getPartOfTheDay().equals("Night") && (currentHour > 22 ||  currentHour < 2))
                 {
-                    startNotification("Hey! It's evening, are you going to sleep?", "goToBad");
+                    startNotification("Hey! It's evening, are you going to sleep?", "goToBed");
                 }
             }
         };
@@ -561,7 +573,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(ns);
         notificationType = notType;
-        Notification notification = new Notification(R.mipmap.ic_launcher, null,
+        Notification notification = new Notification(R.mipmap.icon, null,
                 System.currentTimeMillis());
 
         RemoteViews notificationView = new RemoteViews(getPackageName(), R.layout.notification);

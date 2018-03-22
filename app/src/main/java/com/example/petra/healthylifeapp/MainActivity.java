@@ -245,6 +245,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
                         if(!steps.equals(""))
                         {
                             StepsGoal = Integer.parseInt(steps);
+                            TextView textGoal =(TextView) findViewById(R.id.title_text_stepsGoal);
+                            textGoal.setText("GOAL: " +  String.valueOf(StepsGoal));
                         }
                     }
 
@@ -424,8 +426,8 @@ public class MainActivity extends AppCompatActivity implements OnDataPointListen
 
                         if(weather != null) {
                             TextView txtWeather = (TextView) findViewById(R.id.txtWeather);
-                            txtWeather.setText("Temp: " + weather.getTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
-                            txtWeather.append("Feels like: " + weather.getFeelsLikeTemperature(Weather.CELSIUS) + System.getProperty("line.separator"));
+                            txtWeather.setText("Temp: " + String.valueOf(weather.getTemperature(Weather.CELSIUS)).substring(0, 2) + "°C" + System.getProperty("line.separator"));
+                            txtWeather.append("Feels like: " + String.valueOf(weather.getFeelsLikeTemperature(Weather.CELSIUS)).substring(0, 2) + "°C" + System.getProperty("line.separator"));
                             txtWeather.append("Humidity: " + weather.getHumidity() + System.getProperty("line.separator"));
 
                             weathercondition = weather.getConditions()[0];

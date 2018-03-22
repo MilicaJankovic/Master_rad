@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     package="com.example.petra.healthylifeapp">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -21,11 +22,12 @@
     <application
         android:name=".HealthyLifeApp"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:icon="@mipmap/icon"
+        android:label="HealthyLifeApp"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        app:logo="@mipmap/icon">
 
         <uses-library android:name="com.google.android.maps" />
 

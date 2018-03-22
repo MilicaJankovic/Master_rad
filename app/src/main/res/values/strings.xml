@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">HealthyLifeApp</string>
+    <string name="app_name">Healthy Life App</string>
     <string name="facebook_app_id">1683242371719364</string>
     <string name="fb_login_protocol_scheme">fb1683242371719364</string>
     <string name="buttonHistoryText">Show Walking History</string>
