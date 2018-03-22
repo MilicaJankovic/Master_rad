@@ -151,13 +151,15 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //        System.loadLibrary("tensorflow_inference");
 //    }
 
-    private static final String MODEL_FILE = "file:///assets/frozen_har.pb";
+//    private static final String MODEL_FILE = "file:///assets/frozen_har.pb";
+
+    private static final String MODEL_FILE = "file:///android_asset/optimized_frozen_har.pb";
 
     String INPUT_NODE = "input";
     String[] OUTPUT_NODES = {"y_"};
     String OUTPUT_NODE = "y_";
     //I don't know what is input size
-    long[] INPUT_SIZE = {1, 16};
+    long[] INPUT_SIZE = {1, 15};
     int OUTPUT_SIZE = 2;
 
     private TensorFlowInferenceInterface inferenceInterface;
@@ -266,11 +268,34 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         SetLightSensor();
 
-        //float[] bla = predictProbabilities();
+//        int []data = {1, 26, 1000, 3, 1, 0, 0, 0, 0, 0, 85, 48, 7, 4, 2};
+//        float[] out = predictProbabilities(data);
+
+        //float []data = {(float)1, (float)26, (float)1000, (float)3, (float)1, (float)0, (float)0, (float)0, (float)0, (float)0, (float)85, (float)48, (float)7, (float)4, (float)2};
+        float[] data = {(float)1.0, (float)26.0, (float)1000.0, (float)3.0, (float)1.0,(float)0.0, (float) 0.0, (float)0.0, (float)0.0, (float)0.0, (float)85.0, (float)48.0, (float)7.0, (float)4.0, (float)2.0};
+        float[] out = predictProbabilitiesFloat(data);
+
     }
 
+    //return the value with greater probability
+    private static int argmax(float[] elements)
+    {
+        int bestindex = -1;
+        float max = -1000;
+        for(int i=0; i<elements.length; i++)
+        {
+            float element = elements[i];
+            if(element > max)
+            {
+                max = element;
+                bestindex = i;
+            }
+        }
 
-    public float[] predictProbabilities(float[] data) {
+        return bestindex;
+    }
+
+    public float[] predictProbabilities(int[] data) {
         float[] result = new float[OUTPUT_SIZE];
         inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
         inferenceInterface.run(OUTPUT_NODES);
@@ -278,6 +303,16 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         //for us it should be 0 or 1
         //Downstairs	Jogging	  Sitting	Standing	Upstairs	Walking
+        return result;
+    }
+
+    public float[] predictProbabilitiesFloat(float[] data) {
+        float[] result = new float[OUTPUT_SIZE];
+        inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
+        inferenceInterface.run(OUTPUT_NODES);
+        inferenceInterface.fetch(OUTPUT_NODE, result);
+
+        //for us it should be 0 or 1
         return result;
     }
 
