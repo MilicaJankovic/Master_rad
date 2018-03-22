@@ -13,10 +13,9 @@
         android:id="@+id/notifiation_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
         android:layout_weight="30"
         android:padding="20dp"
-        android:src="@mipmap/ic_launcher" />
+        android:src="@mipmap/icon" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -47,7 +46,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@color/cast_expanded_controller_ad_container_white_stripe_color"
-                android:drawableLeft="@mipmap/snooze"
+                android:drawableLeft="@mipmap/button_snooze"
                 android:text="Snooze"
                 android:textColor="@color/com_facebook_likeboxcountview_text_color" />
 
@@ -57,7 +56,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@color/cast_expanded_controller_ad_container_white_stripe_color"
-                android:drawableLeft="@mipmap/accept"
+                android:drawableLeft="@mipmap/button_accept"
                 android:text="Accept"
                 android:textColor="@color/com_facebook_likeboxcountview_text_color" />
         </LinearLayout>

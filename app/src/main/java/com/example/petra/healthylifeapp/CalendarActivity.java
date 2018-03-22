@@ -75,10 +75,15 @@ public class CalendarActivity extends AppCompatActivity {
 
                     if(finalValue!= "")
                     {
-                        TextView textviewDate = (TextView) findViewById(R.id.date);
+                        TextView textviewCalories = (TextView) findViewById(R.id.calories);
                         // CaloriesCalculator calculator = new CaloriesCalculator(this, 90, 184 /*, Double.valueOf(finalValue)*/);
                         calculator.SetNumberOfSteps(Long.valueOf(finalValue), con);
-                        textviewDate.setText(String.valueOf(calculator.CalculateCaloriesBurnedBySteps()));
+                        int calories = (int) (calculator.CalculateCaloriesBurnedBySteps() + calculator.CalculateCaloriesBurnedByDoingExercises());
+                        //String value = String.valueOf();
+
+
+                        textviewCalories.setText(String.valueOf(calories));
+
                     }
 
                 }
@@ -117,8 +122,9 @@ public class CalendarActivity extends AppCompatActivity {
 
                     if(userCalories.containsKey(dateFormat))
                     {
-                        TextView textviewDate = (TextView) findViewById(R.id.date);
-                        textviewDate.setText(String.valueOf(userCalories.get(dateFormat)));
+                        TextView textviewCalories = (TextView) findViewById(R.id.calories);
+
+                        textviewCalories.setText(String.valueOf(userCalories.get(dateFormat).intValue()));
                     }
                 }
                 }

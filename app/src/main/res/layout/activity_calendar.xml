@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@mipmap/background">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        >
     <CalendarView
         android:id="@+id/calendarView"
         android:layout_width="match_parent"
@@ -15,11 +17,34 @@
     <TextView
         android:id="@+id/date"
         android:layout_width="match_parent"
-        android:layout_height="51dp"
-        android:text="Date"
+        android:layout_height="50dp"
+        android:text="Calories burned:"
         android:textAlignment="center"
-        android:textSize="45dp"
-        android:visibility="visible" />
+        android:textSize="35dp"
+        android:visibility="visible"
+        android:inputType="textMultiLine"/>
+
+
+        <LinearLayout
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:orientation="vertical"
+            android:layout_marginLeft="140dp"
+            android:background="@mipmap/steps_counter">
+
+            <TextView
+                android:id="@+id/calories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textAlignment="center"
+                android:textSize="30dp"
+                android:visibility="visible"
+                android:inputType="textMultiLine"
+                android:layout_marginTop="30dp"/>
+
+
+        </LinearLayout>
 
 
    </LinearLayout>
