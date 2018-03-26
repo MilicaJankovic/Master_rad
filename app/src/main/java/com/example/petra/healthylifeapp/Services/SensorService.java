@@ -80,6 +80,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
+
 //import org.tensorflow.DataType;
 import org.tensorflow.Graph;
 import org.tensorflow.Session;
@@ -125,7 +126,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     private int stepsGoal = 10000;
     private String notificationType = "";
     private String userGender = "";
-//    private int userSleep = 0;
+    //    private int userSleep = 0;
     private int targetWeight = 0;
     private Double cycling = 0.0;
     private Double driving = 0.0;
@@ -151,7 +152,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //        System.loadLibrary("tensorflow_inference");
 //    }
 
-    private static final String MODEL_FILE = "file:///assets/frozen_har.pb";
+    private static final String MODEL_FILE = "file:///android_asset/optimized_frozen_har.pb";
 
     String INPUT_NODE = "input";
     String[] OUTPUT_NODES = {"y_"};
@@ -164,16 +165,16 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
     //endregion
 
-    public CaloriesCalculator calculator = new CaloriesCalculator(this, 1,1) ;
+    public CaloriesCalculator calculator = new CaloriesCalculator(this, 1, 1);
 
     public SensorService(Context applicationContext) {
         super();
         Log.i("HERE", "here I am!");
-      //  appContext = this;
+        //  appContext = this;
 
     }
 
-    public SensorService(){
+    public SensorService() {
 
     }
 
@@ -210,30 +211,29 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                         userCalories = FirebaseUtility.getUserCalories(dataSnapshot);
                         userAge = FirebaseUtility.CalculateAge(dataSnapshot);
 
-                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal").equals("")) {
+                        if (!FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal").equals("")) {
                             stepsGoal = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "stepsGoal"));
                         }
                         userGender = FirebaseUtility.getUserProperty(dataSnapshot, "gender");
 
-                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "sleep").equals("")) {
+                        if (!FirebaseUtility.getUserProperty(dataSnapshot, "sleep").equals("")) {
                             userSleepTime = Long.valueOf(Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "sleep"))).longValue();
                         }
 
-                        if(!FirebaseUtility.getUserProperty(dataSnapshot, "weight").equals("")) {
+                        if (!FirebaseUtility.getUserProperty(dataSnapshot, "weight").equals("")) {
                             targetWeight = Integer.parseInt(FirebaseUtility.getUserProperty(dataSnapshot, "weight"));
                         }
 
                         userWeight = FirebaseUtility.getUserProperty(dataSnapshot, "weight");
                         userHeight = FirebaseUtility.getUserProperty(dataSnapshot, "height");
 
-                        if(!userWeight.equals("") && !userHeight.equals(""))
+                        if (!userWeight.equals("") && !userHeight.equals(""))
                             calculator = new CaloriesCalculator(appContext, Double.valueOf(userWeight), Double.valueOf(userHeight));
                         else
                             calculator = new CaloriesCalculator(appContext, 1, 1);
 
 
-
-                     //   ShowNumberOfSteps(MainActivity.textViewSteps);
+                        //   ShowNumberOfSteps(MainActivity.textViewSteps);
 //                        InitializeCheckBoxes(MainActivity.squats, MainActivity.jumping, MainActivity.climbers, MainActivity.burpees, MainActivity.pushups, MainActivity.situps);
 //                        calculator.SetSharedPreferencesForExcersise("BLA", false, appContext);
                     }
@@ -266,25 +266,36 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
         SetLightSensor();
 
-//        int []data = {1, 26, 1000, 3, 1, 0, 0, 0, 0, 0, 85, 48, 7, 4, 2};
-//        float[] out = predictProbabilities(data);
+        // int []data = {1, 26, 1000, 3, 1, 0, 0, 0, 0, 0, 85, 48, 7, 4, 2};
+        //  float[] out = predictProbabilities(data);
 
-        //float []data = {(float)1, (float)26, (float)1000, (float)3, (float)1, (float)0, (float)0, (float)0, (float)0, (float)0, (float)85, (float)48, (float)7, (float)4, (float)2};
-        float[] data = {(float)1.0, (float)26.0, (float)1000.0, (float)3.0, (float)1.0,(float)0.0, (float) 0.0, (float)0.0, (float)0.0, (float)0.0, (float)85.0, (float)48.0, (float)7.0, (float)4.0, (float)2.0};
-        float[] out = predictProbabilitiesFloat(data);
+        // float []data = {(float)1, (float)26, (float)1000, (float)3, (float)1, (float)0, (float)0, (float)0, (float)0, (float)0, (float)85, (float)48, (float)7, (float)4, (float)2};
+//        float[] data = {(float)1.0, (float)26.0, (float)1000.0, (float)3.0, (float)1.0,(float)0.0, (float) 0.0, (float)0.0, (float)0.0, (float)0.0, (float)85.0, (float)48.0, (float)7.0, (float)4.0, (float)2.0};
+//        float[] out = predictProbabilitiesFloat(data);
+//        Log.d("DBG", String.valueOf(out.length));
+//        Log.d("DBG0", String.valueOf(out[0]));
+//        Log.d("DBG1", String.valueOf(out[1]));
 
     }
 
+    private boolean checkNotificationSending(float[] data) {
+        boolean send = false;
+
+        float[] output = predictProbabilitiesFloat(data);
+        if (argmax(output) == 1) {
+            send = true;
+        }
+
+        return send;
+    }
+
     //return the value with greater probability
-    private static int argmax(float[] elements)
-    {
+    private static int argmax(float[] elements) {
         int bestindex = -1;
-        float max = -1000;
-        for(int i=0; i<elements.length; i++)
-        {
+        float max = -10;
+        for (int i = 0; i < elements.length; i++) {
             float element = elements[i];
-            if(element > max)
-            {
+            if (element > max) {
                 max = element;
                 bestindex = i;
             }
@@ -293,7 +304,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return bestindex;
     }
 
-    public float[] predictProbabilities(int[] data) {
+    public float[] predictProbabilities(double[] data) {
         float[] result = new float[OUTPUT_SIZE];
         inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
         inferenceInterface.run(OUTPUT_NODES);
@@ -307,10 +318,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public float[] predictProbabilitiesFloat(float[] data) {
         float[] result = new float[OUTPUT_SIZE];
         inferenceInterface.feed(INPUT_NODE, data, INPUT_SIZE);
+        float[] kprob = {(float) 1.0};
+        inferenceInterface.feed("keep_prob", kprob, 1);
         inferenceInterface.run(OUTPUT_NODES);
         inferenceInterface.fetch(OUTPUT_NODE, result);
 
-        //for us it should be 0 or 1
         return result;
     }
 
@@ -389,8 +401,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
-    public void setTimerTaskWeather()
-    {
+    public void setTimerTaskWeather() {
         Timer timerWeather = new Timer();
         TimerTask timerTaskWeather = new TimerTask() {
             @Override
@@ -426,7 +437,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 //                }
                 if (currentHour == 2 && currentMinute == 33) {
                     calculator.ResetSharedPreferences();
-                     //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
+                    //MainActivity.calculator.CalculateCaloriesBurnedBySteps();
                     FirebaseUtility.ResetUserLocations();
                 }
 
@@ -440,8 +451,12 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                 if (FirebaseUtility.getPartOfTheDay().equals("Afternoon") && currentHour == 14 && !flagStepsGoal) {
                     if (stepsCount != null) {
                         if (stepsCount < stepsGoal) {
-                            startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!", "StepsGoal");
-                            flagStepsGoal = true;
+
+                            float[] data = createFloatArrayFromUserData();
+                            if(checkNotificationSending(data)) {
+                                startNotification("Hey! You still didn't achieve your steps goal for today! Please do this!", "StepsGoal");
+                                flagStepsGoal = true;
+                            }
                         }
                     }
                 }
@@ -472,20 +487,26 @@ public class SensorService extends Service implements GoogleApiClient.Connection
 
                 // we are calling here activity's method
                 GetAndStoreCurrentLocation();
-               // readData();
-                if(calculator.checkExcersises() <= 0 && !flagTraining)
-                {
-                    startNotification("Hey! It's time for training, do some exercises?", "doExercises");
-                    flagTraining = true;
+                // readData();
+                if (calculator.checkExcersises() <= 0 && !flagTraining) {
+                    float[] data = createFloatArrayFromUserData();
+                    if(checkNotificationSending(data)) {
+                        startNotification("Hey! It's time for training, do some exercises?", "doExercises");
+                        flagTraining = true;
+                    }
                 }
 
-                if(FirebaseUtility.getPartOfTheDay().equals("Morning"))
-                {
-                    startNotification("Hey! It's morning, are you awake?", "getUp");
+                if (FirebaseUtility.getPartOfTheDay().equals("Morning")) {
+                    float[] data = createFloatArrayFromUserData();
+                    if(checkNotificationSending(data)) {
+                        startNotification("Hey! It's morning, are you awake?", "getUp");
+                    }
                 }
-                if(FirebaseUtility.getPartOfTheDay().equals("Night") && (currentHour > 22 ||  currentHour < 2))
-                {
-                    startNotification("Hey! It's evening, are you going to sleep?", "goToBad");
+                if (FirebaseUtility.getPartOfTheDay().equals("Night") && (currentHour > 22 || currentHour < 2)) {
+                    float[] data = createFloatArrayFromUserData();
+                    if(checkNotificationSending(data)) {
+                        startNotification("Hey! It's evening, are you going to sleep?", "goToBad");
+                    }
                 }
             }
         };
@@ -550,12 +571,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             PreviousLon = location.getLongitude();
 
                             flagAtHome = false;
-                        }
-                        else{
+                        } else {
                             //to send it when register it
 
                             // AJDE DA IZBACIMO OVO :D
-                            if(!flagAtHome) {
+                            if (!flagAtHome) {
                                 int weatherCondition = weatherConditionGlobal;
                                 if (weatherCondition != -1) {
                                     switch (weatherCondition) {
@@ -698,7 +718,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 Log.e("ActivityRecognition", "In Vehicle: " + probableActivity.getConfidence());
                                 driving += 0.5;
 
-                                if(!flagDriving) {
+                                if (!flagDriving) {
                                     startNotification("You are in vehicle, are you going to work?", "goToWork");
 
                                     if (vehicleNotification == false) {
@@ -736,7 +756,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                             }
                             case DetectedActivity.ON_BICYCLE: {
                                 Log.e("ActivityRecognition", "On Bicycle: " + probableActivity.getConfidence());
-                                if(probableActivity.getConfidence() > 75) {
+                                if (probableActivity.getConfidence() > 75) {
                                     cycling += 0.5;
                                     if (!flagCycling) {
                                         startNotification("Are you going to cycling?.", "goToCycling");
@@ -752,7 +772,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                     TimeStill = 0;
                                 }
 
-                                if(!flagRunning) {
+                                if (!flagRunning) {
                                     startNotification("Are you going to run?.", "goToRunning");
                                     flagRunning = true;
                                 }
@@ -760,7 +780,8 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                                 flagCycling = false;
                                 break;
                             }
-                            case DetectedActivity.STILL: {Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
+                            case DetectedActivity.STILL: {
+                                Log.e("ActivityRecognition", "Still: " + probableActivity.getConfidence());
 
                                 vehicleNotification = false;
 
@@ -824,25 +845,25 @@ public class SensorService extends Service implements GoogleApiClient.Connection
             switch (weatherCondition) {
                 case Weather.CONDITION_CLOUDY:
                     wcond = "Cloudy";
-                break;
+                    break;
                 case Weather.CONDITION_CLEAR:
                     wcond = "Clear";
-                break;
+                    break;
                 case Weather.CONDITION_FOGGY:
                     wcond = "Foggy";
-                break;
+                    break;
                 case Weather.CONDITION_RAINY:
                     wcond = "Rainy";
-                break;
+                    break;
                 case Weather.CONDITION_SNOWY:
                     wcond = "Snowy";
-                break;
+                    break;
                 case Weather.CONDITION_ICY:
                     wcond = "Icy";
-                break;
+                    break;
                 default:
                     wcond = "Cloudy";
-                break;
+                    break;
             }
         }
 
@@ -873,17 +894,146 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         return weatherCondition;
     }
 
-    private void SetSharedPreferenceLong(String key, Long value)
-    {
+    private void SetSharedPreferenceLong(String key, Long value) {
         SharedPreferences.Editor editor = getSharedPreferences(key, MODE_PRIVATE).edit();
         editor.putLong(key, value);
         editor.apply();
     }
-    private void saveNotificationDataToSQLLite(int userInput) {
+
+
+    private float[] createFloatArrayFromUserData() {
+        List<Float> data = new ArrayList<Float>() {
+        };
+
+//        columns_train = ["Gender", "Age", "StepsNum", "Still", "ContinuousStill",
+//            "Running", "Driving", "Cycling", "Sleeping", "Weather", "TargetWeight",
+//            "Calories", "DayOfTheWeek", "PartOfTheDay",
+//            "NotificationType"]
+
+        UserActivityProperties uap = fillUserData();
+
+        if (uap != null) {
+            switch (uap.getGender()) {
+                case "Female":
+                    data.add(1.0f);
+                    break;
+                case "Male":
+                    data.add(2.0f);
+                    break;
+                default:
+                    data.add(1.0f);
+                    break;
+            }
+
+            data.add((float) uap.getAge());
+            data.add((float) uap.getStepsNum());
+            data.add((float) uap.getStill());
+            data.add((float) uap.getContinuousStill());
+            data.add((float) uap.getRunning());
+            data.add((float) uap.getDriving());
+            data.add((float) uap.getCycling());
+            data.add((float) uap.getSleeping());
+
+            switch (uap.getWeather()) {
+                case "Cloudy":
+                    data.add(1.0f);
+                    break;
+                case "Clear":
+                    data.add(2.0f);
+                    break;
+                case "Foggy":
+                    data.add(3.0f);
+                    break;
+                case "Rainy":
+                    data.add(4.0f);
+                    break;
+                case "Snowy":
+                    data.add(5.0f);
+                    break;
+                case "Icy":
+                    data.add(6.0f);
+                    break;
+                default:
+                    data.add(1.0f);
+                    break;
+            }
+
+            data.add((float) uap.getTargetWeight());
+            data.add((float) uap.getCalories());
+            data.add((float) uap.getDayOfTheWeek());
+
+            switch (uap.getPartOfTheDay()) {
+                case "Morning":
+                    data.add(1.0f);
+                    break;
+                case "Noon":
+                    data.add(2.0f);
+                    break;
+                case "Afternoon":
+                    data.add(3.0f);
+                    break;
+                case "Evening":
+                    data.add(4.0f);
+                    break;
+                case "Night":
+                    data.add(5.0f);
+                    break;
+                default:
+                    data.add(1.0f);
+                    break;
+            }
+
+
+            switch (uap.getNotificationType()) {
+                case "atHome":
+                    data.add(1.0f);
+                    break;
+                case "doExcercises":
+                    data.add(2.0f);
+                    break;
+                case "goToBed":
+                    data.add(3.0f);
+                    break;
+                case "getUp":
+                    data.add(4.0f);
+                    break;
+                case "goToCycling":
+                    data.add(5.0f);
+                    break;
+                case "goToRunning":
+                    data.add(6.0f);
+                    break;
+                case "goToWork":
+                    data.add(7.0f);
+                    break;
+                case "StepsGoal":
+                    data.add(8.0f);
+                    break;
+                case "takeAWalk":
+                    data.add(9.0f);
+                    break;
+                default:
+                    data.add(1.0f);
+                    break;
+            }
+
+        }
+
+        float[] floatArray = new float[data.size()];
+        int i = 0;
+
+        for (Float f : data) {
+            floatArray[i++] = (f != null ? f : 0.0f); // Or whatever default you want.
+        }
+
+        return floatArray;
+    }
+
+
+    private UserActivityProperties fillUserData() {
         UserActivityProperties uap = new UserActivityProperties();
         uap.setAge(userAge);
 
-        //calories, blah
         Double myDouble = calculator.CalculateCaloriesBurnedBySteps();
         Integer val = Integer.valueOf(myDouble.intValue());
         uap.setCalories(Integer.valueOf(val.intValue()));
@@ -905,7 +1055,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         uap.setSleeping(Integer.parseInt(userSleepTime.toString()));
         uap.setTargetWeight(targetWeight);
         uap.setNotificationType(notificationType);
-        uap.setUserInput(userInput);
 
         uap.setWeather(getWeatherCondition());
 
@@ -916,15 +1065,25 @@ public class SensorService extends Service implements GoogleApiClient.Connection
         }
         uap.setStepsNum(stepsCount.intValue());
 
-        mDbHelper.InsertToDatabase(uap);
+        return uap;
+    }
 
-        List<UserActivityProperties> props = new ArrayList<>();
-        props.add(uap);
 
-        NetworkAsyncTask nat = new NetworkAsyncTask(mDbHelper);
-        //nat.doInBackground();
-        nat.execute();
-        //HTTPHelper.setProperties(props);
+    private void saveNotificationDataToSQLLite(int userInput) {
+        UserActivityProperties uap = fillUserData();
+
+        if (uap != null) {
+            uap.setUserInput(userInput);
+            mDbHelper.InsertToDatabase(uap);
+
+            List<UserActivityProperties> props = new ArrayList<>();
+            props.add(uap);
+
+            NetworkAsyncTask nat = new NetworkAsyncTask(mDbHelper);
+            //nat.doInBackground();
+            nat.execute();
+            //HTTPHelper.setProperties(props);
+        }
     }
 
 
@@ -939,9 +1098,7 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     }
 
 
-
-    private void SetSharedPreferenceString(String name, String key, String value)
-    {
+    private void SetSharedPreferenceString(String name, String key, String value) {
         SharedPreferences.Editor editor = getSharedPreferences(name, MODE_PRIVATE).edit();
         editor.putString(key, value);
         editor.apply();
@@ -954,7 +1111,6 @@ public class SensorService extends Service implements GoogleApiClient.Connection
     public void setStepsCount(long stepsCount) {
         this.stepsCount = stepsCount;
     }
-
 
 
     public static class NotificationReceiver extends BroadcastReceiver {
@@ -1006,13 +1162,11 @@ public class SensorService extends Service implements GoogleApiClient.Connection
                     Date userSleepTimeEnded = new Date();
                     final int MILLI_TO_HOUR = 1000 * 60 * 60;
 
-                    if(userSleepTimeEnded != null)
-                    {
+                    if (userSleepTimeEnded != null) {
                         userSleepTime = (userSleepTimeEnded.getTime() - userSleepTimeStarted.getTime()) / MILLI_TO_HOUR;
                         userSleepTimeStarted = null;
-                    }
-                    else{
-                        SimpleDateFormat formatter =new SimpleDateFormat("dd-MM-yyyy");
+                    } else {
+                        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
                         try {
                             userSleepTime = (userSleepTimeEnded.getTime() - formatter.parse(sleepStarted).getDate()) / MILLI_TO_HOUR;
                         } catch (ParseException e) {
